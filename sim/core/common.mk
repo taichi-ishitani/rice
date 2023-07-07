@@ -1,0 +1,1 @@
+../../script/mk/common.mk

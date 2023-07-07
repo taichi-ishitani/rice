@@ -1,0 +1,6 @@
+[submodule "tb/tue"]
+	path = tb/tue
+	url = https://github.com/taichi-ishitani/tue.git
+[submodule "tb/tvip-common"]
+	path = tb/tvip-common
+	url = https://github.com/taichi-ishitani/tvip-common.git
