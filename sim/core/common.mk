@@ -1,1 +1,4 @@
-../../script/mk/common.mk
+default: sim_vcs
+
+-include local.mk
+-include ../../../script/mk/common.mk

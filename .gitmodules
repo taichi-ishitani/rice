@@ -4,3 +4,6 @@
 [submodule "tb/tvip-common"]
 	path = tb/tvip-common
 	url = https://github.com/taichi-ishitani/tvip-common.git
+[submodule "test/riscv/riscv-tests"]
+	path = test/riscv/riscv-tests
+	url = https://github.com/riscv-software-src/riscv-tests.git

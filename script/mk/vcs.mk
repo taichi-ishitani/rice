@@ -63,14 +63,15 @@ VCS_ARGS += -top tb
 PATH_SIM_BINARY := ../sim_binary
 PATH_SIMV       := $(PATH_SIM_BINARY)/simv
 
-.PHONY: compile_vcs __compile_vcs sim_vcs
+.PHONY: compile_vcs __compile_vcs pre_sim_vcs sim_vcs
 
-compile_vcs: flgen_vcs
-	[ -f $(PATH_SIMV) ] || $(MAKE) -C $(PATH_SIM_BINARY) __compile_vcs
+compile_vcs:
+	$(MAKE) -C $(PATH_SIM_BINARY) __compile_vcs
 
-__compile_vcs:
-	vcs $(VCS_ARGS)
+__compile_vcs: flgen_vcs
+	[ -f $(PATH_SIMV) ] || vcs $(VCS_ARGS)
 
-sim_vcs:
-	flock $(PATH_SIM_BINARY)/simv.lock $(MAKE) compile_vcs
+pre_sim_vcs:
+
+sim_vcs: compile_vcs pre_sim_vcs
 	$(PATH_SIMV) $(SIMV_ARGS)
