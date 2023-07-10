@@ -1,0 +1,9 @@
+# Common
+*.log
+
+# VCS
+compile.f
+csrc
+DVEfiles
+simv*
+vc_hdrs.h
