@@ -5,6 +5,7 @@ CLEAN += *.vpd
 CLEAN += ucli.key
 CLEAN += vc_hdrs.h
 CLEAN += DVEfiles
+CLEAN += .inter.vpd.uvm
 
 VCS_ARGS += -full64
 VCS_ARGS += -sverilog

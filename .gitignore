@@ -2,6 +2,7 @@
 *.log
 
 # VCS
+.inter.vpd.uvm
 compile.f
 csrc
 DVEfiles
