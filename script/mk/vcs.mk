@@ -6,6 +6,7 @@ CLEAN += ucli.key
 CLEAN += vc_hdrs.h
 CLEAN += DVEfiles
 CLEAN += .inter.vpd.uvm
+CLEAN += .restartSimSession.tcl.old
 
 VCS_ARGS += -full64
 VCS_ARGS += -sverilog

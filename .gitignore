@@ -15,3 +15,5 @@ vc_hdrs.h
 
 # riscv-tests
 *.bin
+*.dump
+*.elf
