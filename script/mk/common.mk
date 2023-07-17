@@ -30,3 +30,6 @@ CLEAN += *.log
 
 clean:
 	rm -rf $(CLEAN)
+ifneq ($(abspath $(PATH_SIM_BINARY)), $(CURDIR))
+	[ ! -d $(PATH_SIM_BINARY) ] || $(MAKE) -C $(PATH_SIM_BINARY) clean
+endif

@@ -1,2 +1,0 @@
-RISCV_TESTS =on
-

@@ -1,1 +1,1 @@
-../common.mk
+../riscv_test_common.mk

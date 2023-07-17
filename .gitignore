@@ -2,9 +2,16 @@
 *.log
 
 # VCS
+*.vpd
+*.fsdb
 .inter.vpd.uvm
+.restartSimSession.tcl.old
 compile.f
 csrc
 DVEfiles
 simv*
+ucli.key
 vc_hdrs.h
+
+# riscv-tests
+*.bin
