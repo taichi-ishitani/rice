@@ -1,5 +1,5 @@
-file_list 'tb/tue/compile.rb'
-file_list 'tb/tvip-common/compile.rb'
+file_list 'tue/compile.rb', from: :current
+file_list 'tvip-common/compile.rb', from: :current
 
 include_directory '.'
 source_file 'tb_rice_bus_if.sv'
