@@ -7,3 +7,6 @@
 [submodule "test/riscv/riscv-tests"]
 	path = test/riscv/riscv-tests
 	url = https://github.com/riscv-software-src/riscv-tests.git
+[submodule "rtl/common/pzbcm"]
+	path = rtl/common/pzbcm
+	url = https://github.com/pezy-computing/pzbcm.git

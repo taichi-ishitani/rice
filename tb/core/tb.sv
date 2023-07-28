@@ -28,6 +28,7 @@ module tb;
   rice_core duv (
     .i_clk        (clock_if.clk     ),
     .i_rst_n      (reset_if.reset_n ),
+    .i_enable     ('1               ),
     .inst_bus_if  (inst_bus_if      ),
     .data_bus_if  (data_bus_if      )
   );

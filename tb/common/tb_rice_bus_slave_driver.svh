@@ -61,6 +61,7 @@ class tb_rice_bus_slave_driver extends tb_rice_bus_component_base #(
 
   protected virtual function void finish_response_item();
     end_response(currnet_item);
+    seq_item_port.item_done();
     currnet_item  = null;
   endfunction
 

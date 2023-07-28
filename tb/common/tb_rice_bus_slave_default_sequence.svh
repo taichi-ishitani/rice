@@ -3,8 +3,10 @@ class tb_rice_bus_slave_default_sequence extends tb_rice_bus_slave_sequence;
     tb_rice_bus_slave_item  item;
     forever begin
       get_request(item);
-      item.data = get_read_data(item.address);
-      `uvm_send(item)
+      if (item.is_read()) begin
+        item.data = get_read_data(item.address);
+        `uvm_send(item)
+      end
     end
   endtask
 

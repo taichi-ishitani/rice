@@ -6,6 +6,7 @@
 *.fsdb
 .inter.vpd.uvm
 .restartSimSession.tcl.old
+.synopsys_dve_rebuild.tcl
 compile.f
 csrc
 DVEfiles

@@ -22,6 +22,10 @@ class tb_rice_env_test_base #(
     sequencer = env.sequencer;
   endfunction
 
+  function void start_of_simulation_phase(uvm_phase phase);
+    setup_default_sequences();
+  endfunction
+
   task reset_phase(uvm_phase phase);
     phase.raise_objection(this);
     if (configuration.tb_context.clock_vif != null) begin
@@ -56,6 +60,9 @@ class tb_rice_env_test_base #(
     end
 
     return null;
+  endfunction
+
+  protected virtual function void setup_default_sequences();
   endfunction
 
   protected function void set_default_sequence(

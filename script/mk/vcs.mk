@@ -7,14 +7,17 @@ CLEAN += vc_hdrs.h
 CLEAN += DVEfiles
 CLEAN += .inter.vpd.uvm
 CLEAN += .restartSimSession.tcl.old
+CLEAN += .synopsys_dve_rebuild.tcl
 
 VCS_ARGS += -full64
 VCS_ARGS += -sverilog
 VCS_ARGS += -timescale=1ns/1ps
+VCS_ARGS += -top tb
 VCS_ARGS += -l vcs.log
 VCS_ARGS += -ntb_opts uvm-$(UVM_VERSION)
 VCS_ARGS += +define+UVM_NO_DEPRECATED
 VCS_ARGS += +define+UVM_OBJECT_MUST_HAVE_CONSTRUCTO
+VCS_ARGS += +warn=noUII-L
 
 SIMV_ARGS += -l simv.log
 SIMV_ARGS += +UVM_VERBOSITY=$(VERBOSITY)

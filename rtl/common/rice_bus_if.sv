@@ -52,7 +52,8 @@ interface rice_bus_if #(
     import  read_request_valid,
     import  read_request_ack,
     import  write_request_valid,
-    import  write_request_ack
+    import  write_request_ack,
+    import  response_ack
   );
 
   modport slave (
@@ -68,7 +69,8 @@ interface rice_bus_if #(
     import  read_request_valid,
     import  read_request_ack,
     import  write_request_valid,
-    import  write_request_ack
+    import  write_request_ack,
+    import  response_ack
   );
 
   modport monitor (
@@ -84,6 +86,7 @@ interface rice_bus_if #(
     import  read_request_valid,
     import  read_request_ack,
     import  write_request_valid,
-    import  write_request_ack
+    import  write_request_ack,
+    import  response_ack
   );
 endinterface
