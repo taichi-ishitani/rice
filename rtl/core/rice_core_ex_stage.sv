@@ -1,4 +1,4 @@
-module rice_core_exe_stage
+module rice_core_ex_stage
   import  rice_core_pkg::*;
 #(
   parameter int XLEN  = 32
@@ -6,19 +6,22 @@ module rice_core_exe_stage
   input var                       i_clk,
   input var                       i_rst_n,
   input var                       i_enable,
-  rice_core_pipeline_if.exe_stage pipeline_if,
+  rice_core_pipeline_if.ex_stage  pipeline_if,
   rice_bus_if.master              data_bus_if
 );
   `rice_core_define_types(XLEN)
 
-  rice_core_value       rs1_value;
-  rice_core_value       rs2_value;
-  logic                 memory_access_valid;
-  logic [1:0]           memory_access_done;
-  logic [XLEN-1:0]      memory_access_data;
-  logic                 stall;
-  logic                 exe_result_valid;
-  rice_core_exe_result  exe_result;
+  rice_core_value     rs1_value;
+  rice_core_value     rs2_value;
+  rice_core_ex_result wb_result;
+  logic               alu_valid;
+  logic [XLEN-1:0]    alu_data;
+  logic               memory_access_valid;
+  logic [1:0]         memory_access_done;
+  logic [XLEN-1:0]    memory_access_data;
+  logic               stall;
+  logic               ex_result_valid;
+  rice_core_ex_result ex_result;
 
   always_comb begin
     pipeline_if.flush     = '0;
@@ -32,29 +35,65 @@ module rice_core_exe_stage
     rs1_value =
       get_rs_value(
         pipeline_if.id_result.rs1, pipeline_if.id_result.rs1_value,
-        exe_result.valid, exe_result.rd, exe_result.rd_value
+        wb_result, ex_result
       );
     rs2_value =
       get_rs_value(
         pipeline_if.id_result.rs2, pipeline_if.id_result.rs2_value,
-        exe_result.valid, exe_result.rd, exe_result.rd_value
+        wb_result, ex_result
       );
   end
 
+  always_ff @(posedge i_clk, negedge i_rst_n) begin
+    if (!i_rst_n) begin
+      wb_result <= rice_core_ex_result'(0);
+    end
+    else if (!i_enable) begin
+      wb_result <= rice_core_ex_result'(0);
+    end
+    else if (!stall) begin
+      wb_result <= ex_result;
+    end
+  end
+
   function automatic rice_core_value get_rs_value(
-    rice_core_rs    rs,
-    rice_core_value rs_value,
-    logic           rd_valid,
-    rice_core_rs    rd,
-    rice_core_value rd_value
+    rice_core_rs        rs,
+    rice_core_value     rs_value,
+    rice_core_ex_result wb_result,
+    rice_core_ex_result ex_result
   );
-    if (rd_valid && (rs == rd) && (rs != rice_core_rs'(0))) begin
-      return rd_value;
+    logic [1:0] forwarding;
+    forwarding[1] = wb_result.valid && (rs == wb_result.rd) && (rs != rice_core_rs'(0));
+    forwarding[0] = ex_result.valid && (rs == ex_result.rd) && (rs != rice_core_rs'(0));
+    if (forwarding[1]) begin
+      return wb_result.rd_value;
+    end
+    else if (forwarding[0]) begin
+      return ex_result.rd_value;
     end
     else begin
       return rs_value;
     end
   endfunction
+
+//--------------------------------------------------------------
+//  ALU
+//--------------------------------------------------------------
+  always_comb begin
+    alu_valid =
+      pipeline_if.id_result.valid && i_enable &&
+      (pipeline_if.id_result.alu_operation.command != RICE_CORE_ALU_NONE);
+  end
+
+  rice_core_alu #(
+    .XLEN (XLEN )
+  ) u_alu (
+    .i_rs1_value      (rs1_value                            ),
+    .i_rs2_value      (rs2_value                            ),
+    .i_imm_value      (pipeline_if.id_result.imm_value      ),
+    .i_alu_operation  (pipeline_if.id_result.alu_operation  ),
+    .o_result         (alu_data                             )
+  );
 
 //--------------------------------------------------------------
 //  Load/Store unit
@@ -95,26 +134,30 @@ module rice_core_exe_stage
 //  Result
 //--------------------------------------------------------------
   always_comb begin
-    pipeline_if.exe_result  = exe_result;
+    pipeline_if.ex_result = ex_result;
   end
 
   always_comb begin
-    exe_result_valid  = memory_access_done[1];
+    ex_result_valid  =
+      alu_valid || (memory_access_done != '0);
   end
 
   always_ff @(posedge i_clk, negedge i_rst_n) begin
     if (!i_rst_n) begin
-      exe_result  <= rice_core_exe_result'(0);
+      ex_result <= rice_core_ex_result'(0);
     end
     else if (!i_enable) begin
-      exe_result  <= rice_core_exe_result'(0);
+      ex_result <= rice_core_ex_result'(0);
     end
     else if (!stall) begin
-      exe_result.valid  <= exe_result_valid;
-      if (exe_result_valid) begin
-        exe_result.rd <= pipeline_if.id_result.rd;
-        if (memory_access_done) begin
-          exe_result.rd_value <= memory_access_data;
+      ex_result.valid <= ex_result_valid;
+      if (ex_result_valid) begin
+        ex_result.rd  <= pipeline_if.id_result.rd;
+        if (memory_access_done[1]) begin
+          ex_result.rd_value  <= memory_access_data;
+        end
+        else begin
+          ex_result.rd_value  <= alu_data;
         end
       end
     end

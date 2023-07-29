@@ -50,7 +50,7 @@ module rice_core_if_stage
     end
     else if (request_ack || (!request_valid)) begin
       request_valid <=
-        i_enable && ((!fifo_full) || fifo_pop) && ((!flush) || flush_done);
+        i_enable && (!fifo_full) && ((!flush) || flush_done);
     end
   end
 
@@ -105,15 +105,16 @@ module rice_core_if_stage
   end
 
   pzbcm_fifo #(
-    .TYPE   (rice_core_inst ),
-    .DEPTH  (FIFO_DEPTH     )
+    .TYPE       (rice_core_inst ),
+    .DEPTH      (FIFO_DEPTH     ),
+    .THRESHOLD  (FIFO_DEPTH - 1 )
   ) u_inst_fifo (
     .i_clk          (i_clk                  ),
     .i_rst_n        (i_rst_n                ),
     .i_clear        (flush                  ),
     .o_empty        (fifo_empty             ),
-    .o_almost_full  (),
-    .o_full         (fifo_full              ),
+    .o_almost_full  (fifo_full              ),
+    .o_full         (),
     .o_word_count   (),
     .i_push         (fifo_push              ),
     .i_data         (inst_bus_if.read_data  ),

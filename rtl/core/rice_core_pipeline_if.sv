@@ -7,7 +7,7 @@ interface rice_core_pipeline_if
 
   rice_core_if_result     if_result;
   rice_core_id_result     id_result;
-  rice_core_exe_result    exe_result;
+  rice_core_ex_result     ex_result;
   logic                   stall;
   logic                   flush;
   rice_core_pc            flush_pc;
@@ -28,23 +28,23 @@ interface rice_core_pipeline_if
     input   register_file
   );
 
-  modport exe_stage (
+  modport ex_stage (
     input   id_result,
-    output  exe_result,
+    output  ex_result,
     output  stall,
     output  flush,
     output  flush_pc
   );
 
   modport rf (
-    input   exe_result,
+    input   ex_result,
     output  register_file
   );
 
   modport monitor (
     input if_result,
     input id_result,
-    input exe_result,
+    input ex_result,
     input register_file,
     input stall,
     input flush,

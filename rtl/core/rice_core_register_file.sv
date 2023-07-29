@@ -9,14 +9,14 @@ module rice_core_register_file
   `rice_core_define_types(XLEN)
 
   rice_core_value [31:0]  register_file;
-  rice_core_exe_result    exe_result;
+  rice_core_ex_result     ex_result;
 
   always_comb begin
     pipeline_if.register_file = register_file;
   end
 
   always_comb begin
-    exe_result  = pipeline_if.exe_result;
+    ex_result = pipeline_if.ex_result;
   end
 
   for (genvar i = 0;i < 32;++i) begin : g_register_file
@@ -29,12 +29,12 @@ module rice_core_register_file
       logic update_rg;
 
       always_comb begin
-        update_rg = exe_result.valid && (exe_result.rd == rice_core_rd'(i));
+        update_rg = ex_result.valid && (ex_result.rd == rice_core_rd'(i));
       end
 
       always_ff @(posedge i_clk) begin
         if (update_rg) begin
-          register_file[i]  <= exe_result.rd_value;
+          register_file[i]  <= ex_result.rd_value;
         end
       end
     end

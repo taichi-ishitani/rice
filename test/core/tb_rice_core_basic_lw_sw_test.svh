@@ -1,7 +1,7 @@
 class tb_rice_core_basic_lw_sw_test extends tb_rice_core_basic_test_base;
   protected task setup();
-    write_inst(32'h0000_0000, 32'h0080_2303); //  lw
-    write_inst(32'h0000_0004, 32'h0060_2823); //  sw
+    write_inst(32'h0000_0000, inst_lw(6, 0, 12'h008));
+    write_inst(32'h0000_0004, inst_sw(0, 6, 12'h010));
     write_data(32'h0000_0008, 32'h2222_2222);
   endtask
 

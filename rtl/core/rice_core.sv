@@ -28,9 +28,9 @@ module rice_core (
     .pipeline_if  (pipeline_if  )
   );
 
-  rice_core_exe_stage #(
+  rice_core_ex_stage #(
     .XLEN (XLEN )
-  ) u_exe_stage (
+  ) u_ex_stage (
     .i_clk        (i_clk        ),
     .i_rst_n      (i_rst_n      ),
     .i_enable     (i_enable     ),

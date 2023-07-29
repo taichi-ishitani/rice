@@ -10,6 +10,9 @@ module rice_core_id_stage
 );
   `rice_core_define_types(XLEN)
 
+//--------------------------------------------------------------
+//  Decoder
+//--------------------------------------------------------------
   rice_core_if_result if_result;
   rice_core_id_result id_result;
 
@@ -38,9 +41,7 @@ module rice_core_id_stage
         id_result.rs1_value     <= get_rs1_value(if_result.inst, pipeline_if.register_file);
         id_result.rs2_value     <= get_rs2_value(if_result.inst, pipeline_if.register_file);
         id_result.imm_value     <= get_imm_value(if_result.inst);
-        id_result.alu_operation <= RICE_CORE_ALU_NONE;
-        id_result.alu_operand_1 <= rice_core_alu_operand'(0);
-        id_result.alu_operand_2 <= rice_core_alu_operand'(0);
+        id_result.alu_operation <= decode_alu_operation(if_result.inst);
         id_result.memory_access <= decode_memory_access(if_result.inst);
       end
     end
@@ -131,6 +132,34 @@ module rice_core_id_stage
     endcase
   endfunction
 
+  function automatic rice_core_alu_operation get_alu_operation(
+    rice_core_alu_command command,
+    rice_core_alu_source  source_1,
+    rice_core_alu_source  source_2
+  );
+    rice_core_alu_operation operation;
+    operation.command   = command;
+    operation.source_1  = source_1;
+    operation.source_2  = source_2;
+    return operation;
+  endfunction
+
+  function automatic rice_core_alu_operation decode_alu_operation(rice_core_inst inst_bits);
+    rice_core_inst_r_type   inst;
+
+    inst  = rice_core_inst_r_type'(inst_bits);
+    case ({inst.opcode, inst.funct3, inst.funct7}) inside
+      {RICE_CORE_OPCODE_OP_IMM, 3'b000, 7'b???_????}: //  addi
+        return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
+      {RICE_CORE_OPCODE_OP, 3'b000, 7'b000_0000}: //  add
+        return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
+      {RICE_CORE_OPCODE_OP, 3'b000, 7'b010_0000}: //  sub
+        return get_alu_operation(RICE_CORE_ALU_SUB, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
+      default:
+        return get_alu_operation(RICE_CORE_ALU_NONE, RICE_CORE_ALU_SOURCE_IMM_0, RICE_CORE_ALU_SOURCE_IMM_0);
+    endcase
+  endfunction
+
   function automatic rice_core_memory_access decode_memory_access(rice_core_inst inst_bits);
     rice_core_inst_r_type   inst;
     rice_core_memory_access memory_access;
@@ -146,4 +175,25 @@ module rice_core_id_stage
 
     return memory_access;
   endfunction
+
+//--------------------------------------------------------------
+//  Debug
+//--------------------------------------------------------------
+  if (RICE_CORE_DEBUG) begin : g_debug
+    rice_core_inst_r_type inst_r_type;
+    rice_core_inst_i_type inst_i_type;
+    rice_core_inst_s_type inst_s_type;
+    rice_core_inst_b_type inst_b_type;
+    rice_core_inst_u_type inst_u_type;
+    rice_core_inst_j_type inst_j_type;
+
+    always_comb begin
+      inst_r_type = rice_core_inst_r_type'(if_result.inst);
+      inst_i_type = rice_core_inst_i_type'(if_result.inst);
+      inst_s_type = rice_core_inst_s_type'(if_result.inst);
+      inst_b_type = rice_core_inst_b_type'(if_result.inst);
+      inst_u_type = rice_core_inst_u_type'(if_result.inst);
+      inst_j_type = rice_core_inst_j_type'(if_result.inst);
+    end
+  end
 endmodule

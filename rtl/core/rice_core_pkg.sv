@@ -109,13 +109,21 @@ package rice_core_pkg;
 
   typedef enum logic [31:0] {
     RICE_CORE_ALU_NONE,
-    RICE_CORE_ALU_ADD
-  } rice_core_alu_operation;
+    RICE_CORE_ALU_ADD,
+    RICE_CORE_ALU_SUB
+  } rice_core_alu_command;
 
   typedef enum logic [31:0] {
-    RICE_CORE_ALU_OPERAND_RS,
-    RICE_CORE_ALU_OPERAND_IMM
-  } rice_core_alu_operand;
+    RICE_CORE_ALU_SOURCE_IMM_0,
+    RICE_CORE_ALU_SOURCE_IMM,
+    RICE_CORE_ALU_SOURCE_RS
+  } rice_core_alu_source;
+
+  typedef struct packed {
+    rice_core_alu_command command;
+    rice_core_alu_source  source_1;
+    rice_core_alu_source  source_2;
+  } rice_core_alu_operation;
 
   typedef enum logic [1:0] {
     RICE_CORE_MEMORY_ACCESS_NONE,
@@ -135,4 +143,8 @@ package rice_core_pkg;
     rice_core_memory_access_type  access_type;
     rice_core_memory_access_mode  access_mode;
   } rice_core_memory_access;
+
+  localparam  bit RICE_CORE_DEBUG = `ifndef SYNTHESIS 1
+                                    `else             0
+                                    `endif;
 endpackage
