@@ -15,5 +15,6 @@ package tb_rice_core_test_pkg;
   `include  "tb_rice_core_basic_test_base.svh"
   `include  "tb_rice_core_basic_lw_sw_test.svh"
   `include  "tb_rice_core_basic_add_sub_test.svh"
+  `include  "tb_rice_core_basic_and_or_xor_test.svh"
   `include  "tb_rice_core_riscv_test.svh"
 endpackage

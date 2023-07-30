@@ -47,6 +47,9 @@ module rice_core_alu
 //--------------------------------------------------------------
   always_comb begin
     case (i_alu_operation.command)
+      RICE_CORE_ALU_AND:  o_result  = operand_1 & operand_2;
+      RICE_CORE_ALU_OR:   o_result  = operand_1 | operand_2;
+      RICE_CORE_ALU_XOR:  o_result  = operand_1 ^ operand_2;
       RICE_CORE_ALU_SUB:  o_result  = operand_1 - operand_2;
       default:            o_result  = operand_1 + operand_2;
     endcase

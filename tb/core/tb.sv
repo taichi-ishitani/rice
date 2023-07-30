@@ -33,6 +33,13 @@ module tb;
     .data_bus_if  (data_bus_if      )
   );
 
+  bind  duv
+  tb_rice_core_env_inst_checker u_inst_checker (
+    .i_clk        (i_clk        ),
+    .i_rst_n      (i_rst_n      ),
+    .pipeline_if  (pipeline_if  )
+  );
+
   function automatic tb_rice_core_env_context create_tb_context();
     tb_rice_core_env_context  tb_context;
 

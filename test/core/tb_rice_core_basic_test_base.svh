@@ -93,6 +93,93 @@ class tb_rice_core_basic_test_base extends tb_rice_core_test_base;
     return inst;
   endfunction
 
+  protected function bit [31:0] inst_andi(
+    int         rd,
+    int         rs,
+    bit [11:0]  imm
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b0010011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b111;
+    inst[19:15] = rs;
+    inst[31:20] = imm;
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_ori(
+    int         rd,
+    int         rs,
+    bit [11:0]  imm
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b0010011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b110;
+    inst[19:15] = rs;
+    inst[31:20] = imm;
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_xori(
+    int         rd,
+    int         rs,
+    bit [11:0]  imm
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b0010011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b100;
+    inst[19:15] = rs;
+    inst[31:20] = imm;
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_and(
+    int rd,
+    int rs1,
+    int rs2
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b0110011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b111;
+    inst[19:15] = rs1;
+    inst[24:20] = rs2;
+    inst[31:25] = 7'b0000000;
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_or(
+    int rd,
+    int rs1,
+    int rs2
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b0110011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b110;
+    inst[19:15] = rs1;
+    inst[24:20] = rs2;
+    inst[31:25] = 7'b0000000;
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_xor(
+    int rd,
+    int rs1,
+    int rs2
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b0110011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b100;
+    inst[19:15] = rs1;
+    inst[24:20] = rs2;
+    inst[31:25] = 7'b0000000;
+    return inst;
+  endfunction
+
   protected task write_inst(
     tb_rice_bus_address offset,
     bit [31:0]          inst
