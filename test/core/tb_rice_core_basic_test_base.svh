@@ -49,6 +49,28 @@ class tb_rice_core_basic_test_base extends tb_rice_core_test_base;
     return inst;
   endfunction
 
+  protected function bit [31:0] inst_lui(
+    int         rd,
+    bit [31:0]  imm
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b0110111;
+    inst[11:7]  = rd;
+    inst[31:12] = imm[31:12];
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_auipc(
+    int         rd,
+    bit [31:0]  imm
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b0010111;
+    inst[11:7]  = rd;
+    inst[31:12] = imm[31:12];
+    return inst;
+  endfunction
+
   protected function bit [31:0] inst_addi(
     int         rd,
     int         rs,

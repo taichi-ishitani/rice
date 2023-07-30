@@ -119,7 +119,8 @@ package rice_core_pkg;
   typedef enum logic [31:0] {
     RICE_CORE_ALU_SOURCE_IMM_0,
     RICE_CORE_ALU_SOURCE_IMM,
-    RICE_CORE_ALU_SOURCE_RS
+    RICE_CORE_ALU_SOURCE_RS,
+    RICE_CORE_ALU_SOURCE_PC
   } rice_core_alu_source;
 
   typedef struct packed {

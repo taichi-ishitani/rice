@@ -3,6 +3,7 @@ module rice_core_alu
 #(
   parameter int XLEN  = 32
 )(
+  input   var [XLEN-1:0]              i_pc,
   input   var [XLEN-1:0]              i_rs1_value,
   input   var [XLEN-1:0]              i_rs2_value,
   input   var [XLEN-1:0]              i_imm_value,
@@ -16,16 +17,18 @@ module rice_core_alu
   logic [XLEN-1:0]  operand_2;
 
   always_comb begin
-    operand_1 = get_operand_1(i_alu_operation.source_1, i_rs1_value);
+    operand_1 = get_operand_1(i_alu_operation.source_1, i_rs1_value, i_pc);
     operand_2 = get_operand_2(i_alu_operation.source_2, i_rs2_value, i_imm_value);
   end
 
   function automatic logic [XLEN-1:0] get_operand_1(
     rice_core_alu_source  source,
-    logic [XLEN-1:0]      rs1_value
+    logic [XLEN-1:0]      rs1_value,
+    logic [XLEN-1:0]      pc
   );
     case (source)
       RICE_CORE_ALU_SOURCE_RS:  return rs1_value;
+      RICE_CORE_ALU_SOURCE_PC:  return pc;
       default:                  return '0;
     endcase
   endfunction

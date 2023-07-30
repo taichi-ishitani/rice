@@ -88,6 +88,7 @@ module rice_core_ex_stage
   rice_core_alu #(
     .XLEN (XLEN )
   ) u_alu (
+    .i_pc             (pipeline_if.id_result.pc             ),
     .i_rs1_value      (rs1_value                            ),
     .i_rs2_value      (rs2_value                            ),
     .i_imm_value      (pipeline_if.id_result.imm_value      ),

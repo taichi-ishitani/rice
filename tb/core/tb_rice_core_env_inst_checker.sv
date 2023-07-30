@@ -8,11 +8,6 @@ module tb_rice_core_env_inst_checker
   import  uvm_pkg::*;
   `include  "uvm_macros.svh"
 
-  logic [31:0]  inst;
-  always @(posedge i_clk) begin
-    inst  <= pipeline_if.if_result.inst;
-  end
-
   ast_valid_instruction:
   assert
     property (
@@ -22,5 +17,5 @@ module tb_rice_core_env_inst_checker
         (pipeline_if.id_result.memory_access.access_type != RICE_CORE_MEMORY_ACCESS_NONE)
     )
   else
-    `uvm_fatal("INVALID_INST", $sformatf("invalid instruction is given: %h", inst))
+    `uvm_fatal("INVALID_INST", $sformatf("invalid instruction is given: %h", $past(pipeline_if.if_result.inst)))
 endmodule

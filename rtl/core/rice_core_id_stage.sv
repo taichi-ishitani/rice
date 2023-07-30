@@ -149,6 +149,10 @@ module rice_core_id_stage
 
     inst  = rice_core_inst_r_type'(inst_bits);
     case ({inst.opcode, inst.funct3, inst.funct7}) inside
+      {RICE_CORE_OPCODE_LUI, 3'b???, 7'b???_????}:    //  lui
+        return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_IMM_0, RICE_CORE_ALU_SOURCE_IMM);
+      {RICE_CORE_OPCODE_AUIPC, 3'b???, 7'b???_????}:  //  auipc
+        return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_PC, RICE_CORE_ALU_SOURCE_IMM);
       {RICE_CORE_OPCODE_OP_IMM, 3'b000, 7'b???_????}: //  addi
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
       {RICE_CORE_OPCODE_OP_IMM, 3'b111, 7'b???_????}: //  andi
