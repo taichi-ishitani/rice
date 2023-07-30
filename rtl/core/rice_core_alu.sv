@@ -50,6 +50,9 @@ module rice_core_alu
 //--------------------------------------------------------------
   always_comb begin
     case (i_alu_operation.command)
+      RICE_CORE_ALU_SRA,
+      RICE_CORE_ALU_SRL,
+      RICE_CORE_ALU_SLL:  o_result  = do_shift_left(i_alu_operation.command, operand_1, operand_2);
       RICE_CORE_ALU_AND:  o_result  = operand_1 & operand_2;
       RICE_CORE_ALU_OR:   o_result  = operand_1 | operand_2;
       RICE_CORE_ALU_XOR:  o_result  = operand_1 ^ operand_2;
@@ -57,4 +60,39 @@ module rice_core_alu
       default:            o_result  = operand_1 + operand_2;
     endcase
   end
+
+  function automatic logic [XLEN-1:0] do_shift_left(
+    rice_core_alu_command command,
+    logic [XLEN-1:0]      operand_1,
+    logic [XLEN-1:0]      operand_2
+  );
+    logic [2*XLEN-1:0]  data;
+    logic [4:0]         size;
+    logic [XLEN-1:0]    result;
+
+    case (command)
+      RICE_CORE_ALU_SLL: begin
+        data[1*XLEN+:XLEN]  = '0;
+        data[0*XLEN+:XLEN]  = {<<{operand_1}};
+      end
+      RICE_CORE_ALU_SRL: begin
+        data[1*XLEN+:XLEN]  = '0;
+        data[0*XLEN+:XLEN]  = operand_1;
+      end
+      default: begin
+        data[1*XLEN+:XLEN]  = {XLEN{operand_1[XLEN-1]}};
+        data[0*XLEN+:XLEN]  = operand_1;
+      end
+    endcase
+
+    size    = operand_2[4:0];
+    result  = data[size+:XLEN];
+
+    if (command == RICE_CORE_ALU_SLL) begin
+      return {<<{result}};
+    end
+    else begin
+      return result;
+    end
+  endfunction
 endmodule

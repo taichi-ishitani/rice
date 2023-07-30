@@ -202,6 +202,96 @@ class tb_rice_core_basic_test_base extends tb_rice_core_test_base;
     return inst;
   endfunction
 
+  protected function bit [31:0] inst_slli(
+    int rd,
+    int rs,
+    int shamt
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b0010011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b001;
+    inst[19:15] = rs;
+    inst[24:20] = shamt;
+    inst[31:25] = 7'b0000000;
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_srli(
+    int rd,
+    int rs,
+    int shamt
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b0010011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b101;
+    inst[19:15] = rs;
+    inst[24:20] = shamt;
+    inst[31:25] = 7'b0000000;
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_srai(
+    int rd,
+    int rs,
+    int shamt
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b0010011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b101;
+    inst[19:15] = rs;
+    inst[24:20] = shamt;
+    inst[31:25] = 7'b0100000;
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_sll(
+    int rd,
+    int rs1,
+    int rs2
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b0110011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b001;
+    inst[19:15] = rs1;
+    inst[24:20] = rs2;
+    inst[31:25] = 7'b0000000;
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_srl(
+    int rd,
+    int rs1,
+    int rs2
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b0110011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b101;
+    inst[19:15] = rs1;
+    inst[24:20] = rs2;
+    inst[31:25] = 7'b0000000;
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_sra(
+    int rd,
+    int rs1,
+    int rs2
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b0110011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b101;
+    inst[19:15] = rs1;
+    inst[24:20] = rs2;
+    inst[31:25] = 7'b0100000;
+    return inst;
+  endfunction
+
   protected task write_inst(
     tb_rice_bus_address offset,
     bit [31:0]          inst

@@ -111,9 +111,12 @@ package rice_core_pkg;
     RICE_CORE_ALU_NONE,
     RICE_CORE_ALU_ADD,
     RICE_CORE_ALU_SUB,
-    RICE_CORE_ALU_AND,
+    RICE_CORE_ALU_XOR,
     RICE_CORE_ALU_OR,
-    RICE_CORE_ALU_XOR
+    RICE_CORE_ALU_AND,
+    RICE_CORE_ALU_SLL,
+    RICE_CORE_ALU_SRL,
+    RICE_CORE_ALU_SRA
   } rice_core_alu_command;
 
   typedef enum logic [31:0] {
