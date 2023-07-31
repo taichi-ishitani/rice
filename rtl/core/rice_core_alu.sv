@@ -52,7 +52,7 @@ module rice_core_alu
     case (i_alu_operation.command)
       RICE_CORE_ALU_SRA,
       RICE_CORE_ALU_SRL,
-      RICE_CORE_ALU_SLL:  o_result  = do_shift_left(i_alu_operation.command, operand_1, operand_2);
+      RICE_CORE_ALU_SLL:  o_result  = do_shift(i_alu_operation.command, operand_1, operand_2);
       RICE_CORE_ALU_AND:  o_result  = operand_1 & operand_2;
       RICE_CORE_ALU_OR:   o_result  = operand_1 | operand_2;
       RICE_CORE_ALU_XOR:  o_result  = operand_1 ^ operand_2;
@@ -61,7 +61,7 @@ module rice_core_alu
     endcase
   end
 
-  function automatic logic [XLEN-1:0] do_shift_left(
+  function automatic logic [XLEN-1:0] do_shift(
     rice_core_alu_command command,
     logic [XLEN-1:0]      operand_1,
     logic [XLEN-1:0]      operand_2
