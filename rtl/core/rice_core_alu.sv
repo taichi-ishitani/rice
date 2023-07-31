@@ -56,6 +56,8 @@ module rice_core_alu
       RICE_CORE_ALU_AND:  o_result  = operand_1 & operand_2;
       RICE_CORE_ALU_OR:   o_result  = operand_1 | operand_2;
       RICE_CORE_ALU_XOR:  o_result  = operand_1 ^ operand_2;
+      RICE_CORE_ALU_LT,
+      RICE_CORE_ALU_LTU:  o_result  = do_lt(i_alu_operation.command, operand_1, operand_2);
       RICE_CORE_ALU_SUB:  o_result  = operand_1 - operand_2;
       default:            o_result  = operand_1 + operand_2;
     endcase
@@ -94,5 +96,25 @@ module rice_core_alu
     else begin
       return result;
     end
+  endfunction
+
+  function automatic logic [XLEN-1:0] do_lt(
+    rice_core_alu_command command,
+    logic [XLEN-1:0]      operand_1,
+    logic [XLEN-1:0]      operand_2
+  );
+    logic signed  [XLEN:0]  lhs;
+    logic signed  [XLEN:0]  rhs;
+
+    if (command == RICE_CORE_ALU_LT) begin
+      lhs = {operand_1[XLEN-1], operand_1};
+      rhs = {operand_2[XLEN-1], operand_2};
+    end
+    else begin
+      lhs = {1'b0, operand_1};
+      rhs = {1'b0, operand_2};
+    end
+
+    return XLEN'(lhs < rhs);
   endfunction
 endmodule

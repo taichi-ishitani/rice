@@ -155,6 +155,10 @@ module rice_core_id_stage
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_PC, RICE_CORE_ALU_SOURCE_IMM);
       {RICE_CORE_OPCODE_OP_IMM, 3'b000, 7'b???_????}: //  addi
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
+      {RICE_CORE_OPCODE_OP_IMM, 3'b010, 7'b???_????}: //  slti
+        return get_alu_operation(RICE_CORE_ALU_LT, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
+      {RICE_CORE_OPCODE_OP_IMM, 3'b011, 7'b???_????}: //  sltiu
+        return get_alu_operation(RICE_CORE_ALU_LTU, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
       {RICE_CORE_OPCODE_OP_IMM, 3'b100, 7'b???_????}: //  xori
         return get_alu_operation(RICE_CORE_ALU_XOR, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
       {RICE_CORE_OPCODE_OP_IMM, 3'b110, 7'b???_????}: //  ori
@@ -171,6 +175,10 @@ module rice_core_id_stage
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
       {RICE_CORE_OPCODE_OP, 3'b000, 7'b010_0000}:     //  sub
         return get_alu_operation(RICE_CORE_ALU_SUB, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
+      {RICE_CORE_OPCODE_OP, 3'b010, 7'b000_0000}:     //  slt
+        return get_alu_operation(RICE_CORE_ALU_LT, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
+      {RICE_CORE_OPCODE_OP, 3'b011, 7'b000_0000}:     //  sltu
+        return get_alu_operation(RICE_CORE_ALU_LTU, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
       {RICE_CORE_OPCODE_OP, 3'b100, 7'b000_0000}:     //  xor
         return get_alu_operation(RICE_CORE_ALU_XOR, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
       {RICE_CORE_OPCODE_OP, 3'b110, 7'b000_0000}:     //  or
