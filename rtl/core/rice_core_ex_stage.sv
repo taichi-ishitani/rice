@@ -11,11 +11,15 @@ module rice_core_ex_stage
 );
   `rice_core_define_types(XLEN)
 
+  rice_core_id_result id_result;
   rice_core_value     rs1_value;
   rice_core_value     rs2_value;
   rice_core_ex_result wb_result;
   logic               alu_valid;
   logic [XLEN-1:0]    alu_data;
+  logic               pc_control_valid;
+  logic               flush;
+  rice_core_pc        flush_pc;
   logic               memory_access_valid;
   logic [1:0]         memory_access_done;
   logic [XLEN-1:0]    memory_access_data;
@@ -24,8 +28,7 @@ module rice_core_ex_stage
   rice_core_ex_result ex_result;
 
   always_comb begin
-    pipeline_if.flush     = '0;
-    pipeline_if.flush_pc  = '0;
+    id_result = pipeline_if.id_result;
   end
 
 //--------------------------------------------------------------
@@ -34,12 +37,12 @@ module rice_core_ex_stage
   always_comb begin
     rs1_value =
       get_rs_value(
-        pipeline_if.id_result.rs1, pipeline_if.id_result.rs1_value,
+        id_result.rs1, id_result.rs1_value,
         wb_result, ex_result
       );
     rs2_value =
       get_rs_value(
-        pipeline_if.id_result.rs2, pipeline_if.id_result.rs2_value,
+        id_result.rs2, id_result.rs2_value,
         wb_result, ex_result
       );
   end
@@ -81,8 +84,8 @@ module rice_core_ex_stage
 //--------------------------------------------------------------
   always_comb begin
     alu_valid =
-      pipeline_if.id_result.valid && i_enable &&
-      (pipeline_if.id_result.alu_operation.command != RICE_CORE_ALU_NONE);
+      id_result.valid &&
+      (id_result.alu_operation.command != RICE_CORE_ALU_NONE);
   end
 
   rice_core_alu #(
@@ -97,12 +100,58 @@ module rice_core_ex_stage
   );
 
 //--------------------------------------------------------------
+//  PC control
+//--------------------------------------------------------------
+  always_comb begin
+    pipeline_if.flush     = flush;
+    pipeline_if.flush_pc  = flush_pc;
+  end
+
+  always_comb begin
+    pc_control_valid  =
+      id_result.valid &&
+      (id_result.pc_control != RICE_CORE_PC_CONTROL_NONE);
+  end
+
+  always_comb begin
+    flush     = get_flush(pc_control_valid, id_result.pc_control, alu_data);
+    flush_pc  = get_flush_pc(id_result.pc_control, id_result.pc, id_result.imm_value);
+  end
+
+  function automatic logic get_flush(
+    logic                 pc_control_valid,
+    rice_core_pc_control  pc_control,
+    rice_core_value       alu_data
+  );
+    case (pc_control)
+      RICE_CORE_PC_CONTROL_BEQ,
+      RICE_CORE_PC_CONTROL_BGE: return pc_control_valid && (alu_data == '0);
+      RICE_CORE_PC_CONTROL_BNE,
+      RICE_CORE_PC_CONTROL_BLT: return pc_control_valid && (alu_data != '0);
+      default:                  return pc_control_valid;
+    endcase
+  endfunction
+
+  function automatic rice_core_pc get_flush_pc(
+    rice_core_pc_control  pc_control,
+    rice_core_pc          pc,
+    rice_core_value       imm_value
+  );
+    rice_core_pc  flush_pc;
+    case (pc_control)
+      default:  flush_pc  = pc + imm_value;
+    endcase
+
+    return flush_pc & {{XLEN-1{1'b1}}, 1'b0};
+  endfunction
+
+//--------------------------------------------------------------
 //  Load/Store unit
 //--------------------------------------------------------------
   always_comb begin
     memory_access_valid =
-      pipeline_if.id_result.valid && i_enable &&
-      (pipeline_if.id_result.memory_access.access_type != RICE_CORE_MEMORY_ACCESS_NONE);
+      id_result.valid &&
+      (id_result.memory_access.access_type != RICE_CORE_MEMORY_ACCESS_NONE);
   end
 
   rice_core_lsu #(
@@ -140,7 +189,7 @@ module rice_core_ex_stage
 
   always_comb begin
     ex_result_valid  =
-      alu_valid || (memory_access_done != '0);
+      alu_valid || pc_control_valid || (memory_access_done != '0);
   end
 
   always_ff @(posedge i_clk, negedge i_rst_n) begin

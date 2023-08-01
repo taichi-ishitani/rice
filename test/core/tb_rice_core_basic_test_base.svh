@@ -350,6 +350,108 @@ class tb_rice_core_basic_test_base extends tb_rice_core_test_base;
     return inst;
   endfunction
 
+  protected function bit [31:0] inst_beq(
+    int         rs1,
+    int         rs2,
+    bit [12:0]  offset
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b1100011;
+    inst[7]     = offset[11];
+    inst[11:8]  = offset[4:1];
+    inst[14:12] = 3'b000;
+    inst[19:15] = rs1;
+    inst[24:20] = rs2;
+    inst[30:25] = offset[10:5];
+    inst[31]    = offset[12];
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_bne(
+    int         rs1,
+    int         rs2,
+    bit [12:0]  offset
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b1100011;
+    inst[7]     = offset[11];
+    inst[11:8]  = offset[4:1];
+    inst[14:12] = 3'b001;
+    inst[19:15] = rs1;
+    inst[24:20] = rs2;
+    inst[30:25] = offset[10:5];
+    inst[31]    = offset[12];
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_blt(
+    int         rs1,
+    int         rs2,
+    bit [12:0]  offset
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b1100011;
+    inst[7]     = offset[11];
+    inst[11:8]  = offset[4:1];
+    inst[14:12] = 3'b100;
+    inst[19:15] = rs1;
+    inst[24:20] = rs2;
+    inst[30:25] = offset[10:5];
+    inst[31]    = offset[12];
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_bge(
+    int         rs1,
+    int         rs2,
+    bit [12:0]  offset
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b1100011;
+    inst[7]     = offset[11];
+    inst[11:8]  = offset[4:1];
+    inst[14:12] = 3'b101;
+    inst[19:15] = rs1;
+    inst[24:20] = rs2;
+    inst[30:25] = offset[10:5];
+    inst[31]    = offset[12];
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_bltu(
+    int         rs1,
+    int         rs2,
+    bit [12:0]  offset
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b1100011;
+    inst[7]     = offset[11];
+    inst[11:8]  = offset[4:1];
+    inst[14:12] = 3'b110;
+    inst[19:15] = rs1;
+    inst[24:20] = rs2;
+    inst[30:25] = offset[10:5];
+    inst[31]    = offset[12];
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_bgeu(
+    int         rs1,
+    int         rs2,
+    bit [12:0]  offset
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b1100011;
+    inst[7]     = offset[11];
+    inst[11:8]  = offset[4:1];
+    inst[14:12] = 3'b111;
+    inst[19:15] = rs1;
+    inst[24:20] = rs2;
+    inst[30:25] = offset[10:5];
+    inst[31]    = offset[12];
+    return inst;
+  endfunction
+
   protected task write_inst(
     tb_rice_bus_address offset,
     bit [31:0]          inst

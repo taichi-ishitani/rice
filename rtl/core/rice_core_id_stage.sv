@@ -42,6 +42,7 @@ module rice_core_id_stage
         id_result.rs2_value     <= get_rs2_value(if_result.inst, pipeline_if.register_file);
         id_result.imm_value     <= get_imm_value(if_result.inst);
         id_result.alu_operation <= decode_alu_operation(if_result.inst);
+        id_result.pc_control    <= decode_pc_control(if_result.inst);
         id_result.memory_access <= decode_memory_access(if_result.inst);
       end
     end
@@ -153,6 +154,18 @@ module rice_core_id_stage
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_IMM_0, RICE_CORE_ALU_SOURCE_IMM);
       {RICE_CORE_OPCODE_AUIPC, 3'b???, 7'b???_????}:  //  auipc
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_PC, RICE_CORE_ALU_SOURCE_IMM);
+      {RICE_CORE_OPCODE_BRANCH, 3'b000, 7'b???_????}: //  beq
+        return get_alu_operation(RICE_CORE_ALU_XOR, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
+      {RICE_CORE_OPCODE_BRANCH, 3'b001, 7'b???_????}: //  bne
+        return get_alu_operation(RICE_CORE_ALU_XOR, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
+      {RICE_CORE_OPCODE_BRANCH, 3'b100, 7'b???_????}: //  blt
+        return get_alu_operation(RICE_CORE_ALU_LT, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
+      {RICE_CORE_OPCODE_BRANCH, 3'b101, 7'b???_????}: //  bge
+        return get_alu_operation(RICE_CORE_ALU_LT, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
+      {RICE_CORE_OPCODE_BRANCH, 3'b110, 7'b???_????}: //  bltu
+        return get_alu_operation(RICE_CORE_ALU_LTU, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
+      {RICE_CORE_OPCODE_BRANCH, 3'b111, 7'b???_????}: //  bgeu
+        return get_alu_operation(RICE_CORE_ALU_LTU, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
       {RICE_CORE_OPCODE_OP_IMM, 3'b000, 7'b???_????}: //  addi
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
       {RICE_CORE_OPCODE_OP_IMM, 3'b010, 7'b???_????}: //  slti
@@ -194,6 +207,27 @@ module rice_core_id_stage
       default:
         return get_alu_operation(RICE_CORE_ALU_NONE, RICE_CORE_ALU_SOURCE_IMM_0, RICE_CORE_ALU_SOURCE_IMM_0);
     endcase
+  endfunction
+
+  function automatic rice_core_pc_control decode_pc_control(rice_core_inst inst_bits);
+    rice_core_inst_b_type inst_b;
+
+    inst_b  = rice_core_inst_b_type'(inst_bits);
+    if ({inst_b.opcode, inst_b.funct3} == {RICE_CORE_OPCODE_BRANCH, 3'b000}) begin
+      return RICE_CORE_PC_CONTROL_BEQ;
+    end
+    else if ({inst_b.opcode, inst_b.funct3} == {RICE_CORE_OPCODE_BRANCH, 3'b001}) begin
+      return RICE_CORE_PC_CONTROL_BNE;
+    end
+    else if ({inst_b.opcode, inst_b.funct3} ==? {RICE_CORE_OPCODE_BRANCH, 3'b1?0}) begin
+      return RICE_CORE_PC_CONTROL_BLT;
+    end
+    else if ({inst_b.opcode, inst_b.funct3} ==? {RICE_CORE_OPCODE_BRANCH, 3'b1?1}) begin
+      return RICE_CORE_PC_CONTROL_BGE;
+    end
+    else begin
+      return RICE_CORE_PC_CONTROL_NONE;
+    end
   endfunction
 
   function automatic rice_core_memory_access decode_memory_access(rice_core_inst inst_bits);

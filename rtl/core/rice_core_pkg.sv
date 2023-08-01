@@ -134,6 +134,14 @@ package rice_core_pkg;
     rice_core_alu_source  source_2;
   } rice_core_alu_operation;
 
+  typedef enum logic [31:0] {
+    RICE_CORE_PC_CONTROL_NONE,
+    RICE_CORE_PC_CONTROL_BEQ,
+    RICE_CORE_PC_CONTROL_BNE,
+    RICE_CORE_PC_CONTROL_BLT,
+    RICE_CORE_PC_CONTROL_BGE
+  } rice_core_pc_control;
+
   typedef enum logic [1:0] {
     RICE_CORE_MEMORY_ACCESS_NONE,
     RICE_CORE_MEMORY_ACCESS_STORE,

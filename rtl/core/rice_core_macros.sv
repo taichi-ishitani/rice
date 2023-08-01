@@ -16,6 +16,7 @@ typedef struct packed { \
   rice_core_value         rs2_value; \
   rice_core_value         imm_value; \
   rice_core_alu_operation alu_operation; \
+  rice_core_pc_control    pc_control; \
   rice_core_memory_access memory_access; \
 } rice_core_id_result; \
 typedef struct packed { \

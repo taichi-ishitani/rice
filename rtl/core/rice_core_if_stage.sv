@@ -61,9 +61,15 @@ module rice_core_if_stage
     else if (!i_enable) begin
       pc  <= INITIAL_PC;
     end
+    else if ((!request_valid) && pipeline_if.flush) begin
+      pc  <= pipeline_if.flush_pc;
+    end
     else if (request_ack) begin
-      if (flush) begin
+      if (pipeline_if.flush) begin
         pc  <= pipeline_if.flush_pc;
+      end
+      else if (flush_busy) begin
+        pc  <= pc_fetched;
       end
       else begin
         pc  <= pc + rice_core_pc'(4);
@@ -84,6 +90,10 @@ module rice_core_if_stage
     pipeline_if.if_result.inst  = inst;
   end
 
+  always_comb begin
+    response_ack  = inst_bus_if.response_ack();
+  end
+
   always_ff @(posedge i_clk, negedge i_rst_n) begin
     if (!i_rst_n) begin
       pc_fetched  <= INITIAL_PC;
@@ -91,7 +101,7 @@ module rice_core_if_stage
     else if (!i_enable) begin
       pc_fetched  <= INITIAL_PC;
     end
-    else if (flush) begin
+    else if (pipeline_if.flush) begin
       pc_fetched  <= pipeline_if.flush_pc;
     end
     else if (fifo_pop) begin
@@ -127,7 +137,7 @@ module rice_core_if_stage
 //--------------------------------------------------------------
   always_comb begin
     flush       = pipeline_if.flush || flush_busy;
-    flush_done  = flush && response_ack && (count == COUNT_WIDTH'(1));
+    flush_done  = get_flush_done(flush, request_ack, response_ack, count);
   end
 
   always_ff @(posedge i_clk, negedge i_rst_n) begin
@@ -153,4 +163,16 @@ module rice_core_if_stage
       count <= count - COUNT_WIDTH'(1);
     end
   end
+
+  function automatic logic get_flush_done(
+    logic                   flush,
+    logic                   request_ack,
+    logic                   response_ack,
+    logic [COUNT_WIDTH-1:0] count
+  );
+    logic [1:0] done;
+    done[0] = (!request_ack) && response_ack && (count == COUNT_WIDTH'(1));
+    done[1] = count == COUNT_WIDTH'(0);
+    return flush && (done != '0);
+  endfunction
 endmodule
