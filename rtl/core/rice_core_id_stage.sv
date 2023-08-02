@@ -228,16 +228,12 @@ module rice_core_id_stage
     rice_core_branch_operation  branch_operation;
 
     inst  = rice_core_inst_b_type'(inst_bits);
-    case ({inst.opcode, inst.funct3}) inside
-      {RICE_CORE_OPCODE_BRANCH, 3'b000},  //  beq
-      {RICE_CORE_OPCODE_BRANCH, 3'b1?1}:  //  bge/bgeu
-        branch_operation  = '{eq_ge: '1, ne_lt: '0};
-      {RICE_CORE_OPCODE_BRANCH, 3'b001},  //  bne
-      {RICE_CORE_OPCODE_BRANCH, 3'b1?0}:  //  blt/bltu
-        branch_operation  = '{eq_ge: '0, ne_lt: '1};
-      default:
-        branch_operation  = '{eq_ge: '0, ne_lt: '0};
-    endcase
+    branch_operation.eq_ge  =
+      (inst.opcode == RICE_CORE_OPCODE_BRANCH) &&
+      (inst.funct3 inside {3'b000, 3'b101, 3'b111});
+    branch_operation.ne_lt  =
+      (inst.opcode == RICE_CORE_OPCODE_BRANCH) &&
+      (inst.funct3 inside {3'b001, 3'b100, 3'b110});
 
     return branch_operation;
   endfunction
