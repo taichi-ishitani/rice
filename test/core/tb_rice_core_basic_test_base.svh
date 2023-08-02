@@ -452,6 +452,31 @@ class tb_rice_core_basic_test_base extends tb_rice_core_test_base;
     return inst;
   endfunction
 
+  protected function bit [31:0] inst_jal(
+    int         rd,
+    bit [20:0]  offset
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b1101111;
+    inst[11:7]  = rd;
+    inst[31:12] = {offset[20], offset[10:1], offset[11], offset[19:12]};
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_jalr(
+    int         rd,
+    int         rs,
+    bit [11:0]  offset
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b1100111;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b000;
+    inst[19:15] = rs;
+    inst[31:20] = offset;
+    return inst;
+  endfunction
+
   protected task write_inst(
     tb_rice_bus_address offset,
     bit [31:0]          inst

@@ -34,16 +34,17 @@ module rice_core_id_stage
     else if (!pipeline_if.stall) begin
       id_result.valid <= if_result.valid;
       if (if_result.valid) begin
-        id_result.pc            <= if_result.pc;
-        id_result.rs1           <= decode_rs1(if_result.inst);
-        id_result.rs2           <= decode_rs2(if_result.inst);
-        id_result.rd            <= decode_rd(if_result.inst);
-        id_result.rs1_value     <= get_rs1_value(if_result.inst, pipeline_if.register_file);
-        id_result.rs2_value     <= get_rs2_value(if_result.inst, pipeline_if.register_file);
-        id_result.imm_value     <= get_imm_value(if_result.inst);
-        id_result.alu_operation <= decode_alu_operation(if_result.inst);
-        id_result.pc_control    <= decode_pc_control(if_result.inst);
-        id_result.memory_access <= decode_memory_access(if_result.inst);
+        id_result.pc                <= if_result.pc;
+        id_result.rs1               <= decode_rs1(if_result.inst);
+        id_result.rs2               <= decode_rs2(if_result.inst);
+        id_result.rd                <= decode_rd(if_result.inst);
+        id_result.rs1_value         <= get_rs1_value(if_result.inst, pipeline_if.register_file);
+        id_result.rs2_value         <= get_rs2_value(if_result.inst, pipeline_if.register_file);
+        id_result.imm_value         <= get_imm_value(if_result.inst);
+        id_result.alu_operation     <= decode_alu_operation(if_result.inst);
+        id_result.jamp_operation    <= decode_jamp_operation(if_result.inst);
+        id_result.branch_operation  <= decode_branch_operation(if_result.inst);
+        id_result.memory_access     <= decode_memory_access(if_result.inst);
       end
     end
   end
@@ -154,6 +155,10 @@ module rice_core_id_stage
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_IMM_0, RICE_CORE_ALU_SOURCE_IMM);
       {RICE_CORE_OPCODE_AUIPC, 3'b???, 7'b???_????}:  //  auipc
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_PC, RICE_CORE_ALU_SOURCE_IMM);
+      {RICE_CORE_OPCODE_JAL, 3'b???, 7'b???_????}:    //  jal
+        return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_PC, RICE_CORE_ALU_SOURCE_IMM_4);
+      {RICE_CORE_OPCODE_JALR, 3'b000, 7'b???_????}:   //  jalr
+        return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_PC, RICE_CORE_ALU_SOURCE_IMM_4);
       {RICE_CORE_OPCODE_BRANCH, 3'b000, 7'b???_????}: //  beq
         return get_alu_operation(RICE_CORE_ALU_XOR, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
       {RICE_CORE_OPCODE_BRANCH, 3'b001, 7'b???_????}: //  bne
@@ -209,25 +214,32 @@ module rice_core_id_stage
     endcase
   endfunction
 
-  function automatic rice_core_pc_control decode_pc_control(rice_core_inst inst_bits);
-    rice_core_inst_b_type inst_b;
+  function automatic rice_core_jamp_operation decode_jamp_operation(rice_core_inst inst_bits);
+    rice_core_inst_i_type     inst;
+    rice_core_jamp_operation  jamp_operation;
+    inst                = rice_core_inst_i_type'(inst_bits);
+    jamp_operation.jal  = (inst.opcode == RICE_CORE_OPCODE_JAL );
+    jamp_operation.jalr = (inst.opcode == RICE_CORE_OPCODE_JALR) && (inst.funct3 == 3'b000);
+    return jamp_operation;
+  endfunction
 
-    inst_b  = rice_core_inst_b_type'(inst_bits);
-    if ({inst_b.opcode, inst_b.funct3} == {RICE_CORE_OPCODE_BRANCH, 3'b000}) begin
-      return RICE_CORE_PC_CONTROL_BEQ;
-    end
-    else if ({inst_b.opcode, inst_b.funct3} == {RICE_CORE_OPCODE_BRANCH, 3'b001}) begin
-      return RICE_CORE_PC_CONTROL_BNE;
-    end
-    else if ({inst_b.opcode, inst_b.funct3} ==? {RICE_CORE_OPCODE_BRANCH, 3'b1?0}) begin
-      return RICE_CORE_PC_CONTROL_BLT;
-    end
-    else if ({inst_b.opcode, inst_b.funct3} ==? {RICE_CORE_OPCODE_BRANCH, 3'b1?1}) begin
-      return RICE_CORE_PC_CONTROL_BGE;
-    end
-    else begin
-      return RICE_CORE_PC_CONTROL_NONE;
-    end
+  function automatic rice_core_branch_operation decode_branch_operation(rice_core_inst inst_bits);
+    rice_core_inst_b_type       inst;
+    rice_core_branch_operation  branch_operation;
+
+    inst  = rice_core_inst_b_type'(inst_bits);
+    case ({inst.opcode, inst.funct3}) inside
+      {RICE_CORE_OPCODE_BRANCH, 3'b000},  //  beq
+      {RICE_CORE_OPCODE_BRANCH, 3'b1?1}:  //  bge/bgeu
+        branch_operation  = '{eq_ge: '1, ne_lt: '0};
+      {RICE_CORE_OPCODE_BRANCH, 3'b001},  //  bne
+      {RICE_CORE_OPCODE_BRANCH, 3'b1?0}:  //  blt/bltu
+        branch_operation  = '{eq_ge: '0, ne_lt: '1};
+      default:
+        branch_operation  = '{eq_ge: '0, ne_lt: '0};
+    endcase
+
+    return branch_operation;
   endfunction
 
   function automatic rice_core_memory_access decode_memory_access(rice_core_inst inst_bits);

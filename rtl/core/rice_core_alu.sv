@@ -39,9 +39,10 @@ module rice_core_alu
     logic [XLEN-1:0]      imm_value
   );
     case (source)
-      RICE_CORE_ALU_SOURCE_RS:  return rs2_value;
-      RICE_CORE_ALU_SOURCE_IMM: return imm_value;
-      default:                  return '0;
+      RICE_CORE_ALU_SOURCE_RS:    return rs2_value;
+      RICE_CORE_ALU_SOURCE_IMM:   return imm_value;
+      RICE_CORE_ALU_SOURCE_IMM_4: return XLEN'(4);
+      default:                    return '0;
     endcase
   endfunction
 

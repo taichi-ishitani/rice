@@ -15,9 +15,7 @@ module rice_core_ex_stage
   rice_core_value     rs1_value;
   rice_core_value     rs2_value;
   rice_core_ex_result wb_result;
-  logic               alu_valid;
   logic [XLEN-1:0]    alu_data;
-  logic               pc_control_valid;
   logic               flush;
   rice_core_pc        flush_pc;
   logic               memory_access_valid;
@@ -82,12 +80,6 @@ module rice_core_ex_stage
 //--------------------------------------------------------------
 //  ALU
 //--------------------------------------------------------------
-  always_comb begin
-    alu_valid =
-      id_result.valid &&
-      (id_result.alu_operation.command != RICE_CORE_ALU_NONE);
-  end
-
   rice_core_alu #(
     .XLEN (XLEN )
   ) u_alu (
@@ -108,41 +100,42 @@ module rice_core_ex_stage
   end
 
   always_comb begin
-    pc_control_valid  =
-      id_result.valid &&
-      (id_result.pc_control != RICE_CORE_PC_CONTROL_NONE);
-  end
-
-  always_comb begin
-    flush     = get_flush(pc_control_valid, id_result.pc_control, alu_data);
-    flush_pc  = get_flush_pc(id_result.pc_control, id_result.pc, id_result.imm_value);
+    flush     = get_flush(id_result, alu_data);
+    flush_pc  = get_flush_pc(id_result, rs1_value);
   end
 
   function automatic logic get_flush(
-    logic                 pc_control_valid,
-    rice_core_pc_control  pc_control,
-    rice_core_value       alu_data
+    rice_core_id_result id_result,
+    rice_core_value     alu_data
   );
-    case (pc_control)
-      RICE_CORE_PC_CONTROL_BEQ,
-      RICE_CORE_PC_CONTROL_BGE: return pc_control_valid && (alu_data == '0);
-      RICE_CORE_PC_CONTROL_BNE,
-      RICE_CORE_PC_CONTROL_BLT: return pc_control_valid && (alu_data != '0);
-      default:                  return pc_control_valid;
-    endcase
+    rice_core_jamp_operation    jamp;
+    rice_core_branch_operation  branch;
+    logic [3:0]                 flush;
+
+    jamp      = id_result.jamp_operation;
+    branch    = id_result.branch_operation;
+    flush[0]  = jamp.jal;
+    flush[1]  = jamp.jalr;
+    flush[2]  = branch.eq_ge && (alu_data == '0);
+    flush[3]  = branch.ne_lt && (alu_data != '0);
+
+    return id_result.valid && (flush != '0);
   endfunction
 
   function automatic rice_core_pc get_flush_pc(
-    rice_core_pc_control  pc_control,
-    rice_core_pc          pc,
-    rice_core_value       imm_value
+    rice_core_id_result id_result,
+    rice_core_value     rs1_value
   );
-    rice_core_pc  flush_pc;
-    case (pc_control)
-      default:  flush_pc  = pc + imm_value;
+    rice_core_jamp_operation  jamp;
+    rice_core_pc              pc;
+
+    jamp  = id_result.jamp_operation;
+    case (1'b1)
+      jamp.jalr:  pc  = rs1_value + id_result.imm_value;
+      default:    pc  = id_result.pc + id_result.imm_value;
     endcase
 
-    return flush_pc & {{XLEN-1{1'b1}}, 1'b0};
+    return pc & {{XLEN-1{1'b1}}, 1'b0};
   endfunction
 
 //--------------------------------------------------------------
@@ -189,7 +182,8 @@ module rice_core_ex_stage
 
   always_comb begin
     ex_result_valid  =
-      alu_valid || pc_control_valid || (memory_access_done != '0);
+      (id_result.valid && (!memory_access_valid)) ||
+      (memory_access_done != '0);
   end
 
   always_ff @(posedge i_clk, negedge i_rst_n) begin

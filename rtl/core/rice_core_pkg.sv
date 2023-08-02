@@ -123,6 +123,7 @@ package rice_core_pkg;
 
   typedef enum logic [31:0] {
     RICE_CORE_ALU_SOURCE_IMM_0,
+    RICE_CORE_ALU_SOURCE_IMM_4,
     RICE_CORE_ALU_SOURCE_IMM,
     RICE_CORE_ALU_SOURCE_RS,
     RICE_CORE_ALU_SOURCE_PC
@@ -141,6 +142,16 @@ package rice_core_pkg;
     RICE_CORE_PC_CONTROL_BLT,
     RICE_CORE_PC_CONTROL_BGE
   } rice_core_pc_control;
+
+  typedef struct packed {
+    logic jal;
+    logic jalr;
+  } rice_core_jamp_operation;
+
+  typedef struct packed {
+    logic eq_ge;
+    logic ne_lt;
+  } rice_core_branch_operation;
 
   typedef enum logic [1:0] {
     RICE_CORE_MEMORY_ACCESS_NONE,
