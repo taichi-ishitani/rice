@@ -10,3 +10,6 @@
 [submodule "tb/common/tvip-common"]
 	path = tb/common/tvip-common
 	url = https://github.com/taichi-ishitani/tvip-common.git
+[submodule "rtl/csr/rggen-sv-rtl"]
+	path = rtl/csr/rggen-sv-rtl
+	url = https://github.com/rggen/rggen-sv-rtl.git

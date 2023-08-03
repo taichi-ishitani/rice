@@ -1,0 +1,3 @@
+address_width: 14
+bus_width: 32
+protocol: rice_bus_if

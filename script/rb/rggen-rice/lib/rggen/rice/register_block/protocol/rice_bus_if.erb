@@ -1,0 +1,17 @@
+rggen_rice_bus_if_adapter #(
+  .ADDRESS_WIDTH        (<%= address_width %>),
+  .LOCAL_ADDRESS_WIDTH  (<%= local_address_width %>),
+  .BUS_WIDTH            (<%= bus_width %>),
+  .REGISTERS            (<%= total_registers %>),
+  .PRE_DECODE           (<%= pre_decode %>),
+  .BASE_ADDRESS         (<%= base_address %>),
+  .BYTE_SIZE            (<%= byte_size %>),
+  .ERROR_STATUS         (<%= error_status %>),
+  .DEFAULT_READ_DATA    (<%= default_read_data %>),
+  .INSERT_SLICER        (<%= insert_slicer %>)
+) u_adaper (
+  .i_clk        (<%= clock %>),
+  .i_rst_n      (<%= reset %>),
+  .csr_if       (<%= csr_if %>),
+  .register_if  (<%= register_if %>)
+);

@@ -1,4 +1,5 @@
 file_list   'rtl/common/common.rb'
+file_list   'rtl/csr/csr.rb'
 source_file 'rice_core_pkg.sv'
 source_file 'rice_core_macros.sv'
 source_file 'rice_core_pipeline_if.sv'
