@@ -5,6 +5,7 @@ class tb_rice_bus_item extends tue_sequence_item #(
   rand  tb_rice_bus_address address;
   rand  tb_rice_bus_strobe  strobe;
   rand  tb_rice_bus_data    data;
+  rand  bit                 error;
         uvm_event           request_begin_event;
         time                request_begin_time;
         uvm_event           request_end_event;
@@ -59,6 +60,7 @@ class tb_rice_bus_item extends tue_sequence_item #(
     `uvm_field_int(address, UVM_DEFAULT | UVM_HEX)
     `uvm_field_int(strobe, UVM_DEFAULT | UVM_HEX)
     `uvm_field_int(data, UVM_DEFAULT | UVM_HEX)
+    `uvm_field_int(error, UVM_DEFAULT | UVM_BIN)
   `uvm_object_utils_end
 endclass
 

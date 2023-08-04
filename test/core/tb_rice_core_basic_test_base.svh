@@ -477,6 +477,90 @@ class tb_rice_core_basic_test_base extends tb_rice_core_test_base;
     return inst;
   endfunction
 
+  protected function bit [31:0] inst_csrrwi(
+    int         rd,
+    bit [11:0]  csr,
+    bit [4:0]   imm
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b1110011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b101;
+    inst[19:15] = imm;
+    inst[31:20] = csr;
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_csrrci(
+    int         rd,
+    bit [11:0]  csr,
+    bit [4:0]   imm
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b1110011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b111;
+    inst[19:15] = imm;
+    inst[31:20] = csr;
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_csrrsi(
+    int         rd,
+    bit [11:0]  csr,
+    bit [4:0]   imm
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b1110011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b110;
+    inst[19:15] = imm;
+    inst[31:20] = csr;
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_csrrw(
+    int         rd,
+    bit [11:0]  csr,
+    int         rs
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b1110011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b001;
+    inst[19:15] = rs;
+    inst[31:20] = csr;
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_csrrc(
+    int         rd,
+    bit [11:0]  csr,
+    int         rs
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b1110011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b011;
+    inst[19:15] = rs;
+    inst[31:20] = csr;
+    return inst;
+  endfunction
+
+  protected function bit [31:0] inst_csrrs(
+    int         rd,
+    bit [11:0]  csr,
+    int         rs
+  );
+    bit [31:0]  inst;
+    inst[6:0]   = 7'b1110011;
+    inst[11:7]  = rd;
+    inst[14:12] = 3'b010;
+    inst[19:15] = rs;
+    inst[31:20] = csr;
+    return inst;
+  endfunction
+
   protected task write_inst(
     tb_rice_bus_address offset,
     bit [31:0]          inst

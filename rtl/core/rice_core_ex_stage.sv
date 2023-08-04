@@ -7,7 +7,8 @@ module rice_core_ex_stage
   input var                       i_rst_n,
   input var                       i_enable,
   rice_core_pipeline_if.ex_stage  pipeline_if,
-  rice_bus_if.master              data_bus_if
+  rice_bus_if.master              data_bus_if,
+  rice_bus_if.master              csr_if
 );
   `rice_core_define_types(XLEN)
 
@@ -21,7 +22,11 @@ module rice_core_ex_stage
   logic               memory_access_valid;
   logic [1:0]         memory_access_done;
   logic [XLEN-1:0]    memory_access_data;
-  logic               stall;
+  logic               csr_access_valid;
+  logic               csr_access_done;
+  logic [XLEN-1:0]    csr_access_data;
+  logic               csr_access_error;
+  logic [1:0]         stall;
   logic               ex_result_valid;
   rice_core_ex_result ex_result;
 
@@ -163,14 +168,40 @@ module rice_core_ex_stage
   );
 
 //--------------------------------------------------------------
+//  CSR access
+//--------------------------------------------------------------
+  always_comb begin
+    csr_access_valid  =
+      id_result.valid &&
+      (id_result.csr_access != RICE_CORE_CSR_ACCESS_NONE);
+  end
+
+  rice_core_csr_rw_unit #(
+    .XLEN (XLEN )
+  ) u_csr_rw_unit (
+    .i_clk          (i_clk                ),
+    .i_rst_n        (i_rst_n              ),
+    .i_valid        (csr_access_valid     ),
+    .i_rs1          (id_result.rs1        ),
+    .i_rs1_value    (rs1_value            ),
+    .i_imm_value    (id_result.imm_value  ),
+    .i_csr_access   (id_result.csr_access ),
+    .o_access_done  (csr_access_done      ),
+    .o_read_data    (csr_access_data      ),
+    .o_error        (csr_access_error     ),
+    .csr_if         (csr_if               )
+  );
+
+//--------------------------------------------------------------
 //  Stall control
 //--------------------------------------------------------------
   always_comb begin
-    pipeline_if.stall=  stall;
+    pipeline_if.stall = stall[0] || stall[1];
   end
 
   always_comb begin
-    stall = memory_access_valid && (memory_access_done == '0);
+    stall[0]  = memory_access_valid && (memory_access_done == '0);
+    stall[1]  = csr_access_valid && (!csr_access_done);
   end
 
 //--------------------------------------------------------------
@@ -182,8 +213,8 @@ module rice_core_ex_stage
 
   always_comb begin
     ex_result_valid  =
-      (id_result.valid && (!memory_access_valid)) ||
-      (memory_access_done != '0);
+      (id_result.valid && (!memory_access_valid) && (!csr_access_valid)) ||
+      (memory_access_done != '0) || csr_access_done;
   end
 
   always_ff @(posedge i_clk, negedge i_rst_n) begin
@@ -197,12 +228,14 @@ module rice_core_ex_stage
       ex_result.valid <= ex_result_valid;
       if (ex_result_valid) begin
         ex_result.rd  <= pipeline_if.id_result.rd;
-        if (memory_access_done[1]) begin
-          ex_result.rd_value  <= memory_access_data;
-        end
-        else begin
-          ex_result.rd_value  <= alu_data;
-        end
+        case (1'b1)
+          memory_access_done[1]:
+            ex_result.rd_value  <= memory_access_data;
+          csr_access_done:
+            ex_result.rd_value  <= csr_access_data;
+          default:
+            ex_result.rd_value  <= alu_data;
+        endcase
       end
     end
   end

@@ -172,6 +172,16 @@ package rice_core_pkg;
     rice_core_memory_access_mode  access_mode;
   } rice_core_memory_access;
 
+  typedef enum logic [2:0] {
+    RICE_CORE_CSR_ACCESS_NONE = 3'b000,
+    RICE_CORE_CSR_ACCESS_RW   = 3'b001,
+    RICE_CORE_CSR_ACCESS_RWI  = 3'b101,
+    RICE_CORE_CSR_ACCESS_RS   = 3'b010,
+    RICE_CORE_CSR_ACCESS_RSI  = 3'b110,
+    RICE_CORE_CSR_ACCESS_RC   = 3'b011,
+    RICE_CORE_CSR_ACCESS_RCI  = 3'b111
+  } rice_core_csr_access;
+
   localparam  bit RICE_CORE_DEBUG = `ifndef SYNTHESIS 1
                                     `else             0
                                     `endif;

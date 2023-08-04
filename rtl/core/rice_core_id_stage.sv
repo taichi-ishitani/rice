@@ -45,6 +45,7 @@ module rice_core_id_stage
         id_result.jamp_operation    <= decode_jamp_operation(if_result.inst);
         id_result.branch_operation  <= decode_branch_operation(if_result.inst);
         id_result.memory_access     <= decode_memory_access(if_result.inst);
+        id_result.csr_access        <= decode_csr_access(if_result.inst);
       end
     end
   end
@@ -252,6 +253,21 @@ module rice_core_id_stage
     memory_access.access_mode = rice_core_memory_access_mode'(inst.funct3);
 
     return memory_access;
+  endfunction
+
+  function automatic rice_core_csr_access decode_csr_access(rice_core_inst inst_bits);
+    rice_core_inst_i_type inst;
+
+    inst  = rice_core_inst_i_type'(inst_bits);
+    case ({inst.opcode, inst.funct3})
+      {RICE_CORE_OPCODE_SYSTEM, 3'b001}:  return RICE_CORE_CSR_ACCESS_RW;
+      {RICE_CORE_OPCODE_SYSTEM, 3'b101}:  return RICE_CORE_CSR_ACCESS_RWI;
+      {RICE_CORE_OPCODE_SYSTEM, 3'b010}:  return RICE_CORE_CSR_ACCESS_RS;
+      {RICE_CORE_OPCODE_SYSTEM, 3'b110}:  return RICE_CORE_CSR_ACCESS_RSI;
+      {RICE_CORE_OPCODE_SYSTEM, 3'b011}:  return RICE_CORE_CSR_ACCESS_RC;
+      {RICE_CORE_OPCODE_SYSTEM, 3'b111}:  return RICE_CORE_CSR_ACCESS_RCI;
+      default:                            return RICE_CORE_CSR_ACCESS_NONE;
+    endcase
   endfunction
 
 //--------------------------------------------------------------

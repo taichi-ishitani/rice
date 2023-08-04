@@ -20,7 +20,7 @@ module rice_core_if_stage
   logic                   request_ack;
   logic                   response_ack;
   logic                   fifo_empty;
-  logic                   fifo_full;
+  logic                   fifo_almost_full;
   logic                   fifo_push;
   logic                   fifo_pop;
   rice_core_pc            pc_fetched;
@@ -50,7 +50,7 @@ module rice_core_if_stage
     end
     else if (request_ack || (!request_valid)) begin
       request_valid <=
-        i_enable && (!fifo_full) && ((!flush) || flush_done);
+        i_enable && (!fifo_almost_full) && ((!flush) || flush_done);
     end
   end
 
@@ -117,13 +117,13 @@ module rice_core_if_stage
   pzbcm_fifo #(
     .TYPE       (rice_core_inst ),
     .DEPTH      (FIFO_DEPTH     ),
-    .THRESHOLD  (FIFO_DEPTH - 1 )
+    .THRESHOLD  (FIFO_DEPTH - 2 )
   ) u_inst_fifo (
     .i_clk          (i_clk                  ),
     .i_rst_n        (i_rst_n                ),
     .i_clear        (flush                  ),
     .o_empty        (fifo_empty             ),
-    .o_almost_full  (fifo_full              ),
+    .o_almost_full  (fifo_almost_full       ),
     .o_full         (),
     .o_word_count   (),
     .i_push         (fifo_push              ),

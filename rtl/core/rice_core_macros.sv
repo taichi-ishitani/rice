@@ -19,6 +19,7 @@ typedef struct packed { \
   rice_core_jamp_operation    jamp_operation; \
   rice_core_branch_operation  branch_operation; \
   rice_core_memory_access     memory_access; \
+  rice_core_csr_access        csr_access; \
 } rice_core_id_result; \
 typedef struct packed { \
   logic           valid; \

@@ -17,5 +17,6 @@ module tb_rice_bus_slave_bfm (
     bfm_if.response_ready = bus_if.response_ready;
     bus_if.response_valid = bfm_if.response_valid;
     bus_if.read_data      = bfm_if.read_data;
+    bus_if.error          = bfm_if.error;
   end
 endmodule

@@ -98,6 +98,7 @@ class tb_rice_bus_monitor_base #(
     if (item.is_read()) begin
       item.data = vif.monitor_cb.read_data;
     end
+    item.error  = vif.monitor_cb.error;
   endfunction
 
   protected virtual function void end_response(tb_rice_bus_item item);

@@ -14,6 +14,7 @@ interface rice_bus_if #(
   logic             response_ready;
   logic             response_valid;
   rice_bus_data     read_data;
+  logic             error;
 
   function automatic logic request_ack();
     return request_ready && request_valid;
@@ -48,6 +49,7 @@ interface rice_bus_if #(
     output  response_ready,
     input   response_valid,
     input   read_data,
+    input   error,
     import  request_ack,
     import  read_request_valid,
     import  read_request_ack,
@@ -65,6 +67,7 @@ interface rice_bus_if #(
     input   response_ready,
     output  response_valid,
     output  read_data,
+    output  error,
     import  request_ack,
     import  read_request_valid,
     import  read_request_ack,
@@ -82,6 +85,7 @@ interface rice_bus_if #(
     input   response_ready,
     input   response_valid,
     input   read_data,
+    input   error,
     import  request_ack,
     import  read_request_valid,
     import  read_request_ack,

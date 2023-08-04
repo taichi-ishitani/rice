@@ -14,6 +14,7 @@ interface tb_rice_bus_if (
   logic                     response_ready;
   logic                     response_valid;
   logic [DATA_WIDTH-1:0]    read_data;
+  logic                     error;
 
   clocking master_cb @(posedge i_clk, negedge i_rst_n);
     input   request_ready;
@@ -24,6 +25,7 @@ interface tb_rice_bus_if (
     output  response_ready;
     input   response_valid;
     input   read_data;
+    input   error;
   endclocking
 
   clocking slave_cb @(posedge i_clk, negedge i_rst_n);
@@ -35,6 +37,7 @@ interface tb_rice_bus_if (
     input   response_ready;
     output  response_valid;
     output  read_data;
+    output  error;
   endclocking
 
   clocking monitor_cb @(posedge i_clk, negedge i_rst_n);
@@ -46,6 +49,7 @@ interface tb_rice_bus_if (
     input response_ready;
     input response_valid;
     input read_data;
+    input error;
   endclocking
 
   event at_master_cb_edge;

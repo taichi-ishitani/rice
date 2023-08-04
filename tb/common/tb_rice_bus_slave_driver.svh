@@ -51,6 +51,7 @@ class tb_rice_bus_slave_driver extends tb_rice_bus_component_base #(
   protected virtual task drive_response_item();
     vif.response_valid  <= '1;
     vif.read_data       <= currnet_item.data;
+    vif.error           <= currnet_item.error;
 
     do begin
       @(vif.slave_cb);
