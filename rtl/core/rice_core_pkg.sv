@@ -121,7 +121,7 @@ package rice_core_pkg;
     RICE_CORE_ALU_SRA
   } rice_core_alu_command;
 
-  typedef enum logic [31:0] {
+  typedef enum logic [2:0] {
     RICE_CORE_ALU_SOURCE_IMM_0,
     RICE_CORE_ALU_SOURCE_IMM_4,
     RICE_CORE_ALU_SOURCE_IMM,
@@ -134,14 +134,6 @@ package rice_core_pkg;
     rice_core_alu_source  source_1;
     rice_core_alu_source  source_2;
   } rice_core_alu_operation;
-
-  typedef enum logic [31:0] {
-    RICE_CORE_PC_CONTROL_NONE,
-    RICE_CORE_PC_CONTROL_BEQ,
-    RICE_CORE_PC_CONTROL_BNE,
-    RICE_CORE_PC_CONTROL_BLT,
-    RICE_CORE_PC_CONTROL_BGE
-  } rice_core_pc_control;
 
   typedef struct packed {
     logic jal;
