@@ -146,6 +146,7 @@ register_block {
   register {
     name 'mie'
     offset_address byte_address(0x304)
+    type :rowi
     bit_field {
       name 'ssie'
       bit_assignment lsb: 1, width: 1; type :rof; initial_value 0

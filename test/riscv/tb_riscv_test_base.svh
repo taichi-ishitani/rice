@@ -25,6 +25,8 @@ class tb_riscv_test_base #(
     tb_rice_bus_status  bus_status;
     tb_rice_bus_address address;
     int                 byte_data;
+    bit [31:0]          word_data;
+    int                 byte_index;
 
     `tue_define_plusarg_string(+RISCV_TEST_FILE, riscv_test_file);
     `uvm_info(
@@ -43,14 +45,22 @@ class tb_riscv_test_base #(
 
     bus_status  = inst_bus_sequencer.get_status();
     address     = START_ADDRESS;
+    byte_index  = 0;
     while (1) begin
       byte_data = $fgetc(fp);
       if (byte_data == -1) begin
         break;
       end
 
-      bus_status.memory.put(byte_data, 1'b1, 1, address, 0);
-      address += 1;
+      word_data[8*byte_index+:8]  = byte_data;
+      if (byte_index == 3) begin
+        bus_status.memory.put(word_data, 4'hF, 4, address, 0);
+        address     = address + 4;
+        byte_index  = 0;
+      end
+      else begin
+        byte_index  = byte_index + 1;
+      end
     end
 
     $fclose(fp);
@@ -77,6 +87,8 @@ class tb_riscv_test_base #(
         $sformatf("test no %0d is faield", test_no)
       )
     end
+
+    configuration.tb_context.clock_vif.wait_cycles(10);
   endtask
 
   protected virtual function bit end_of_test_pattern(

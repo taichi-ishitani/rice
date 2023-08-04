@@ -788,7 +788,7 @@ module rice_csr_m_level_xlen32
     `rggen_tie_off_unused_signals(32, 32'h00000aaa, bit_field_if)
     rggen_default_register #(
       .READABLE       (1),
-      .WRITABLE       (0),
+      .WRITABLE       (1),
       .ADDRESS_WIDTH  (14),
       .OFFSET_ADDRESS (14'h0c10),
       .BUS_WIDTH      (32),
