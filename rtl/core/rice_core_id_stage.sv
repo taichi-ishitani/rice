@@ -35,6 +35,7 @@ module rice_core_id_stage
       id_result.valid <= if_result.valid;
       if (if_result.valid) begin
         id_result.pc                <= if_result.pc;
+        id_result.inst              <= if_result.inst;
         id_result.rs1               <= decode_rs1(if_result.inst);
         id_result.rs2               <= decode_rs2(if_result.inst);
         id_result.rd                <= decode_rd(if_result.inst);
@@ -46,6 +47,7 @@ module rice_core_id_stage
         id_result.branch_operation  <= decode_branch_operation(if_result.inst);
         id_result.memory_access     <= decode_memory_access(if_result.inst);
         id_result.csr_access        <= decode_csr_access(if_result.inst);
+        id_result.trap_control      <= decode_trap_control(if_result.inst);
       end
     end
   end
@@ -268,6 +270,18 @@ module rice_core_id_stage
       {RICE_CORE_OPCODE_SYSTEM, 3'b111}:  return RICE_CORE_CSR_ACCESS_RCI;
       default:                            return RICE_CORE_CSR_ACCESS_NONE;
     endcase
+  endfunction
+
+  localparam  bit [31:0]  ECALL   = {12'h000, 5'h00, 3'b000, 5'h00, RICE_CORE_OPCODE_SYSTEM};
+  localparam  bit [31:0]  EBREAK  = {12'h001, 5'h00, 3'b000, 5'h00, RICE_CORE_OPCODE_SYSTEM};
+  localparam  bit [31:0]  MRET    = {12'h302, 5'h00, 3'b000, 5'h00, RICE_CORE_OPCODE_SYSTEM};
+
+  function automatic rice_core_trap_control decode_trap_control(rice_core_inst inst_bits);
+    rice_core_trap_control  trap_control;
+    trap_control.ecall  = inst_bits == ECALL;
+    trap_control.ebreak = inst_bits == EBREAK;
+    trap_control.mret   = inst_bits == MRET;
+    return trap_control;
   endfunction
 
 //--------------------------------------------------------------

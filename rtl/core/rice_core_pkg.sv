@@ -182,6 +182,36 @@ package rice_core_pkg;
     RICE_CORE_CSR_ACCESS_RCI  = 3'b111
   } rice_core_csr_access;
 
+  typedef struct packed {
+    logic ebreak;
+    logic ecall;
+    logic mret;
+  } rice_core_trap_control;
+
+  typedef enum logic [1:0] {
+    RICE_CORE_USER_MODE       = 2'b00,
+    RICE_CORE_SUPERVISOR_MODE = 2'b01,
+    RICE_CORE_MACHINE_MODE    = 2'b11
+  } rice_core_privilege_level;
+
+  typedef struct packed {
+    logic store_amo_page_fault;
+    logic laod_page_fault;
+    logic instruction_page_fault;
+    logic ecall_from_m_mode;
+    logic __reserved;
+    logic ecall_from_s_mode;
+    logic ecall_from_u_mode;
+    logic store_amo_access_fault;
+    logic store_amo_address_misaligned;
+    logic load_access_fault;
+    logic load_address_misaligned;
+    logic breakpoint;
+    logic illegal_instruction;
+    logic instruction_access_fault;
+    logic instruction_address_misaligned;
+  } rice_core_exception;
+
   localparam  bit RICE_CORE_DEBUG = `ifndef SYNTHESIS 1
                                     `else             0
                                     `endif;

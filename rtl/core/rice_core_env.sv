@@ -3,12 +3,106 @@ module rice_core_env
 #(
   parameter int XLEN  = 32
 )(
-  input var         i_clk,
-  input var         i_rst_n,
-  rice_bus_if.slave csr_if
+  input var             i_clk,
+  input var             i_rst_n,
+  input var             i_enable,
+  rice_core_env_if.env  env_if,
+  rice_bus_if.slave     csr_if
 );
-  logic                   csr_select;
-  rice_bus_if #(12, XLEN) csr_demux_if[2]();
+  `rice_core_define_types(XLEN)
+
+  localparam  int EXCEPTION_CODE_WIDTH  = XLEN - 1;
+  localparam  int MTVEC_BASE_LSB        = 2;
+  localparam  int MTVEC_BASE_WIDTH      = XLEN - MTVEC_BASE_LSB;
+
+  rice_core_privilege_level         privilege_level;
+  logic                             do_trap;
+  logic                             do_return;
+  logic                             mie_set;
+  logic [1:0]                       mie;
+  logic                             mpie_set;
+  logic [1:0]                       mpie;
+  logic [MTVEC_BASE_WIDTH-1:0]      mtvec_base;
+  logic                             mpp_set;
+  logic [1:0][1:0]                  mpp;
+  logic                             mepc_set;
+  rice_core_pc  [1:0]               mepc;
+  logic                             mcause_set;
+  logic                             mcause_interrutpt;
+  logic [EXCEPTION_CODE_WIDTH-1:0]  mcause_code;
+  logic                             csr_select;
+  rice_bus_if #(12, XLEN)           csr_demux_if[2]();
+
+//--------------------------------------------------------------
+//  Privilege level
+//--------------------------------------------------------------
+  always_comb begin
+    env_if.privilege_level  = privilege_level;
+  end
+
+  always_ff @(posedge i_clk, negedge i_rst_n) begin
+    if (!i_rst_n) begin
+      privilege_level <= RICE_CORE_MACHINE_MODE;
+    end
+    else if (!i_enable) begin
+      privilege_level <= RICE_CORE_MACHINE_MODE;
+    end
+    else if (do_trap) begin
+      privilege_level <= RICE_CORE_MACHINE_MODE;
+    end
+    else if (do_return) begin
+      privilege_level <= rice_core_privilege_level'(mpp[0]);
+    end
+  end
+
+//--------------------------------------------------------------
+//  Trap control
+//--------------------------------------------------------------
+  always_comb begin
+    env_if.trap_pc    = {mtvec_base, MTVEC_BASE_LSB'(0)};
+    env_if.return_pc  = mepc[0];
+  end
+
+  always_comb begin
+    do_trap   = env_if.exception != '0;
+    do_return = env_if.mret;
+  end
+
+  always_comb begin
+    mie_set   = do_trap || do_return;
+    mpie_set  = mie_set;
+    mpp_set   = mie_set;
+    if (do_return) begin
+      mie[1]  = mpie[0];
+      mpie[1] = '1;
+      mpp[1]  = RICE_CORE_MACHINE_MODE;
+    end
+    else begin
+      mie[1]  = '0;
+      mpie[1] = mie[0];
+      mpp[1]  = privilege_level;
+    end
+  end
+
+  always_comb begin
+    mepc_set          = do_trap;
+    mepc[1]           = env_if.pc;
+    mcause_set        = do_trap;
+    mcause_interrutpt = '0;
+    mcause_code       = get_exception_code(env_if.exception);
+  end
+
+  function automatic logic [EXCEPTION_CODE_WIDTH] get_exception_code(
+    rice_core_exception exception
+  );
+    for (int i = 0;i < $bits(rice_core_exception);++i) begin
+      if (exception[i]) begin
+        return EXCEPTION_CODE_WIDTH'(i);
+      end
+    end
+
+    return EXCEPTION_CODE_WIDTH'(0);
+  endfunction
 
 //--------------------------------------------------------------
 //  CSR
@@ -53,34 +147,34 @@ module rice_core_env
     .ERROR_STATUS   (1  ),
     .INSERT_SLICER  (1  )
   ) u_csr_m_level (
-    .i_clk                        (i_clk            ),
-    .i_rst_n                      (i_rst_n          ),
-    .csr_if                       (csr_demux_if[1]  ),
-    .i_mhartid                    ('0               ),
-    .i_mstatus_mie_set            ('0               ),
-    .i_mstatus_mie                ('0               ),
-    .o_mstatus_mie                (),
-    .i_mstatus_mpie_set           ('0               ),
-    .i_mstatus_mpie               ('0               ),
-    .o_mstatus_mpie               (),
-    .i_mstatus_mpp_set            ('0               ),
-    .i_mstatus_mpp                ('0               ),
-    .o_mstatus_mpp                (),
+    .i_clk                        (i_clk              ),
+    .i_rst_n                      (i_rst_n            ),
+    .csr_if                       (csr_demux_if[1]    ),
+    .i_mhartid                    ('0                 ),
+    .i_mstatus_mie_set            (mie_set            ),
+    .i_mstatus_mie                (mie[1]             ),
+    .o_mstatus_mie                (mie[0]             ),
+    .i_mstatus_mpie_set           (mpie_set           ),
+    .i_mstatus_mpie               (mpie[1]            ),
+    .o_mstatus_mpie               (mpie[0]            ),
+    .i_mstatus_mpp_set            (mpp_set            ),
+    .i_mstatus_mpp                (mpp[1]             ),
+    .o_mstatus_mpp                (mpp[0]             ),
     .o_misa_support_i             (),
     .o_mtvec_mode                 (),
-    .o_mtvec_base                 (),
+    .o_mtvec_base                 (mtvec_base         ),
     .o_mscratch                   (),
-    .i_mepc_set                   ('0               ),
-    .i_mepc                       ('0               ),
-    .o_mepc                       (),
-    .i_mcause_exception_code_set  ('0               ),
-    .i_mcause_exception_code      ('0               ),
+    .i_mepc_set                   (mepc_set           ),
+    .i_mepc                       (mepc[1]            ),
+    .o_mepc                       (mepc[0]            ),
+    .i_mcause_exception_code_set  (mcause_set         ),
+    .i_mcause_exception_code      (mcause_code        ),
     .o_mcause_exception_code      (),
-    .i_mcause_interrupt_set       ('0               ),
-    .i_mcause_interrupt           ('0               ),
+    .i_mcause_interrupt_set       (mcause_set         ),
+    .i_mcause_interrupt           (mcause_interrutpt  ),
     .o_mcause_interrupt           (),
-    .i_mtval_set                  ('0               ),
-    .i_mtval                      ('0               ),
+    .i_mtval_set                  ('0                 ),
+    .i_mtval                      ('0                 ),
     .o_mtval                      ()
   );
 endmodule

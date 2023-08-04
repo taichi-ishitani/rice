@@ -7,10 +7,15 @@ module rice_core_ex_stage
   input var                       i_rst_n,
   input var                       i_enable,
   rice_core_pipeline_if.ex_stage  pipeline_if,
+  rice_core_env_if.ex_stage       env_if,
   rice_bus_if.master              data_bus_if,
   rice_bus_if.master              csr_if
 );
   `rice_core_define_types(XLEN)
+
+  typedef struct packed {
+    logic csr_access;
+  } rice_core_ex_error;
 
   rice_core_id_result id_result;
   rice_core_value     rs1_value;
@@ -27,8 +32,10 @@ module rice_core_ex_stage
   logic [XLEN-1:0]    csr_access_data;
   logic               csr_access_error;
   logic [1:0]         stall;
+  rice_core_exception exception;
   logic               ex_result_valid;
   rice_core_ex_result ex_result;
+  rice_core_ex_error  ex_error;
 
   always_comb begin
     id_result = pipeline_if.id_result;
@@ -105,39 +112,53 @@ module rice_core_ex_stage
   end
 
   always_comb begin
-    flush     = get_flush(id_result, alu_data);
-    flush_pc  = get_flush_pc(id_result, rs1_value);
+    flush     = get_flush(id_result, exception, alu_data);
+    flush_pc  = get_flush_pc(id_result, exception, rs1_value, env_if.trap_pc, env_if.return_pc);
   end
 
   function automatic logic get_flush(
     rice_core_id_result id_result,
+    rice_core_exception exception,
     rice_core_value     alu_data
   );
     rice_core_jamp_operation    jamp;
     rice_core_branch_operation  branch;
-    logic [3:0]                 flush;
+    rice_core_trap_control      trap;
+    logic [5:0]                 flush;
 
     jamp      = id_result.jamp_operation;
     branch    = id_result.branch_operation;
-    flush[0]  = jamp.jal;
-    flush[1]  = jamp.jalr;
-    flush[2]  = branch.eq_ge && (alu_data == '0);
-    flush[3]  = branch.ne_lt && (alu_data != '0);
+    trap      = id_result.trap_control;
+    flush[0]  = id_result.valid && jamp.jal;
+    flush[1]  = id_result.valid && jamp.jalr;
+    flush[2]  = id_result.valid && branch.eq_ge && (alu_data == '0);
+    flush[3]  = id_result.valid && branch.ne_lt && (alu_data != '0);
+    flush[4]  = id_result.valid && trap.mret;
+    flush[5]  = exception != '0;
 
-    return id_result.valid && (flush != '0);
+    return flush != '0;
   endfunction
 
   function automatic rice_core_pc get_flush_pc(
     rice_core_id_result id_result,
-    rice_core_value     rs1_value
+    rice_core_exception exception,
+    rice_core_value     rs1_value,
+    rice_core_pc        trap_pc,
+    rice_core_pc        return_pc
   );
     rice_core_jamp_operation  jamp;
+    rice_core_trap_control    trap;
+    logic                     error;
     rice_core_pc              pc;
 
     jamp  = id_result.jamp_operation;
+    trap  = id_result.trap_control;
+    error = ex_error != '0;
     case (1'b1)
-      jamp.jalr:  pc  = rs1_value + id_result.imm_value;
-      default:    pc  = id_result.pc + id_result.imm_value;
+      trap.mret:        pc  = return_pc;
+      exception != '0:  pc  = trap_pc;
+      jamp.jalr:        pc  = rs1_value + id_result.imm_value;
+      default:          pc  = id_result.pc + id_result.imm_value;
     endcase
 
     return pc & {{XLEN-1{1'b1}}, 1'b0};
@@ -176,6 +197,10 @@ module rice_core_ex_stage
       (id_result.csr_access != RICE_CORE_CSR_ACCESS_NONE);
   end
 
+  always_comb begin
+    ex_error.csr_access = csr_access_done && csr_access_error;
+  end
+
   rice_core_csr_rw_unit #(
     .XLEN (XLEN )
   ) u_csr_rw_unit (
@@ -203,6 +228,41 @@ module rice_core_ex_stage
     stall[0]  = memory_access_valid && (memory_access_done == '0);
     stall[1]  = csr_access_valid && (!csr_access_done);
   end
+
+//--------------------------------------------------------------
+//  Env control
+//--------------------------------------------------------------
+  always_comb begin
+    env_if.exception  = exception;
+    env_if.mret       = id_result.valid && id_result.trap_control.mret;
+    env_if.pc         = id_result.pc;
+    env_if.inst       = id_result.inst;
+  end
+
+  always_comb begin
+    exception = get_exception(id_result, ex_error, env_if.privilege_level);
+  end
+
+  function automatic rice_core_exception get_exception(
+    rice_core_id_result       id_result,
+    rice_core_ex_error        ex_error,
+    rice_core_privilege_level privilege_level
+  );
+    rice_core_exception exception;
+    logic               ebreak;
+    logic               ecall;
+
+    ebreak                        = id_result.valid && id_result.trap_control.ebreak;
+    ecall                         = id_result.valid && id_result.trap_control.ecall;
+    exception                     = '0;
+    exception.illegal_instruction = ex_error.csr_access;
+    exception.breakpoint          = ebreak;
+    exception.ecall_from_u_mode   = ecall && (privilege_level == RICE_CORE_USER_MODE      );
+    exception.ecall_from_s_mode   = ecall && (privilege_level == RICE_CORE_SUPERVISOR_MODE);
+    exception.ecall_from_m_mode   = ecall && (privilege_level == RICE_CORE_MACHINE_MODE   );
+
+    return exception;
+  endfunction
 
 //--------------------------------------------------------------
 //  Result

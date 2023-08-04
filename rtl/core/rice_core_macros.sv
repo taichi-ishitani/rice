@@ -9,6 +9,7 @@ typedef struct packed { \
 typedef struct packed { \
   logic                       valid; \
   rice_core_pc                pc; \
+  rice_core_inst              inst; \
   rice_core_rs                rs1; \
   rice_core_rs                rs2; \
   rice_core_rd                rd; \
@@ -20,6 +21,7 @@ typedef struct packed { \
   rice_core_branch_operation  branch_operation; \
   rice_core_memory_access     memory_access; \
   rice_core_csr_access        csr_access; \
+  rice_core_trap_control      trap_control; \
 } rice_core_id_result; \
 typedef struct packed { \
   logic           valid; \
