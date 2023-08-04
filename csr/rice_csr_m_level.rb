@@ -8,7 +8,7 @@ def byte_address(word_address)
 end
 
 register_block {
-  name 'rice_csr_m_level'
+  name "rice_csr_m_level_xlen#{XLEN}"
   byte_size 4096 * WORD_SIZE
 
   #
@@ -134,14 +134,12 @@ register_block {
       bit_assignment lsb: 8, width: 1; type :rw; initial_value 1
     }
     bit_field {
-      mxl =
-        case XLEN
-        when 32 then 0x01
-        else 0x00
-        end
-
       name 'mxl'
-      bit_assignment lsb: XLEN - 2, width: 2; type :rof; initial_value mxl
+      bit_assignment lsb: XLEN - 2, width: 2; type :rof
+      initial_value case XLEN
+                    when 32 then 0b01
+                    else 0b00
+                    end
     }
   }
 
@@ -162,7 +160,7 @@ register_block {
     }
     bit_field {
       name 'mtie'
-      bit_assignment lsb: 7, width: 1; type :rws; initial_value 0
+      bit_assignment lsb: 7, width: 1; type :rof; initial_value 0
     }
     bit_field {
       name 'seie'
@@ -170,7 +168,7 @@ register_block {
     }
     bit_field {
       name 'meie'
-      bit_assignment lsb: 11, width: 1; type :rws; initial_value 0
+      bit_assignment lsb: 11, width: 1; type :rof; initial_value 0
     }
   }
 
@@ -260,7 +258,7 @@ register_block {
     }
     bit_field {
       name 'mtip'
-      bit_assignment lsb: 7, width: 1; type :rws; initial_value 0
+      bit_assignment lsb: 7, width: 1; type :rof; initial_value 0
     }
     bit_field {
       name 'seip'
@@ -268,7 +266,7 @@ register_block {
     }
     bit_field {
       name 'meip'
-      bit_assignment lsb: 11, width: 1; type :rws; initial_value 0
+      bit_assignment lsb: 11, width: 1; type :rof; initial_value 0
     }
   }
 }

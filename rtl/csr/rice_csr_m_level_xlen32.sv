@@ -19,7 +19,7 @@
     end \
   end
 `endif
-module rice_csr_m_level
+module rice_csr_m_level_xlen32
   import rggen_rtl_pkg::*;
 #(
   parameter int ADDRESS_WIDTH = 14,
@@ -45,12 +45,6 @@ module rice_csr_m_level
   input logic [1:0] i_mstatus_mpp,
   output logic [1:0] o_mstatus_mpp,
   output logic o_misa_support_i,
-  input logic i_mie_mtie_set,
-  input logic i_mie_mtie,
-  output logic o_mie_mtie,
-  input logic i_mie_meie_set,
-  input logic i_mie_meie,
-  output logic o_mie_meie,
   output logic o_mtvec_mode,
   output logic [29:0] o_mtvec_base,
   output logic [31:0] o_mscratch,
@@ -65,13 +59,7 @@ module rice_csr_m_level
   output logic o_mcause_interrupt,
   input logic i_mtval_set,
   input logic [31:0] i_mtval,
-  output logic [31:0] o_mtval,
-  input logic i_mip_mtip_set,
-  input logic i_mip_mtip,
-  output logic o_mip_mtip,
-  input logic i_mip_meip_set,
-  input logic i_mip_meip,
-  output logic o_mip_meip
+  output logic [31:0] o_mtval
 );
   rggen_register_if #(14, 32, 32) register_if[14]();
   rggen_rice_bus_if_adapter #(
@@ -800,7 +788,7 @@ module rice_csr_m_level
     `rggen_tie_off_unused_signals(32, 32'h00000aaa, bit_field_if)
     rggen_default_register #(
       .READABLE       (1),
-      .WRITABLE       (1),
+      .WRITABLE       (0),
       .ADDRESS_WIDTH  (14),
       .OFFSET_ADDRESS (14'h0c10),
       .BUS_WIDTH      (32),
@@ -892,22 +880,23 @@ module rice_csr_m_level
       rggen_bit_field_if #(1) bit_field_sub_if();
       `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 7, 1)
       rggen_bit_field #(
-        .WIDTH          (1),
-        .INITIAL_VALUE  (INITIAL_VALUE)
+        .WIDTH              (1),
+        .STORAGE            (0),
+        .EXTERNAL_READ_DATA (1)
       ) u_bit_field (
-        .i_clk              (i_clk),
-        .i_rst_n            (i_rst_n),
+        .i_clk              ('0),
+        .i_rst_n            ('0),
         .bit_field_if       (bit_field_sub_if),
         .o_write_trigger    (),
         .o_read_trigger     (),
-        .i_sw_write_enable  ('1),
-        .i_hw_write_enable  (i_mie_mtie_set),
-        .i_hw_write_data    (i_mie_mtie),
+        .i_sw_write_enable  ('0),
+        .i_hw_write_enable  ('0),
+        .i_hw_write_data    ('0),
         .i_hw_set           ('0),
         .i_hw_clear         ('0),
-        .i_value            ('0),
+        .i_value            (INITIAL_VALUE),
         .i_mask             ('1),
-        .o_value            (o_mie_mtie),
+        .o_value            (),
         .o_value_unmasked   ()
       );
     end
@@ -941,22 +930,23 @@ module rice_csr_m_level
       rggen_bit_field_if #(1) bit_field_sub_if();
       `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 11, 1)
       rggen_bit_field #(
-        .WIDTH          (1),
-        .INITIAL_VALUE  (INITIAL_VALUE)
+        .WIDTH              (1),
+        .STORAGE            (0),
+        .EXTERNAL_READ_DATA (1)
       ) u_bit_field (
-        .i_clk              (i_clk),
-        .i_rst_n            (i_rst_n),
+        .i_clk              ('0),
+        .i_rst_n            ('0),
         .bit_field_if       (bit_field_sub_if),
         .o_write_trigger    (),
         .o_read_trigger     (),
-        .i_sw_write_enable  ('1),
-        .i_hw_write_enable  (i_mie_meie_set),
-        .i_hw_write_data    (i_mie_meie),
+        .i_sw_write_enable  ('0),
+        .i_hw_write_enable  ('0),
+        .i_hw_write_data    ('0),
         .i_hw_set           ('0),
         .i_hw_clear         ('0),
-        .i_value            ('0),
+        .i_value            (INITIAL_VALUE),
         .i_mask             ('1),
-        .o_value            (o_mie_meie),
+        .o_value            (),
         .o_value_unmasked   ()
       );
     end
@@ -1298,7 +1288,7 @@ module rice_csr_m_level
     `rggen_tie_off_unused_signals(32, 32'h00000aaa, bit_field_if)
     rggen_default_register #(
       .READABLE       (1),
-      .WRITABLE       (1),
+      .WRITABLE       (0),
       .ADDRESS_WIDTH  (14),
       .OFFSET_ADDRESS (14'h0d10),
       .BUS_WIDTH      (32),
@@ -1390,22 +1380,23 @@ module rice_csr_m_level
       rggen_bit_field_if #(1) bit_field_sub_if();
       `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 7, 1)
       rggen_bit_field #(
-        .WIDTH          (1),
-        .INITIAL_VALUE  (INITIAL_VALUE)
+        .WIDTH              (1),
+        .STORAGE            (0),
+        .EXTERNAL_READ_DATA (1)
       ) u_bit_field (
-        .i_clk              (i_clk),
-        .i_rst_n            (i_rst_n),
+        .i_clk              ('0),
+        .i_rst_n            ('0),
         .bit_field_if       (bit_field_sub_if),
         .o_write_trigger    (),
         .o_read_trigger     (),
-        .i_sw_write_enable  ('1),
-        .i_hw_write_enable  (i_mip_mtip_set),
-        .i_hw_write_data    (i_mip_mtip),
+        .i_sw_write_enable  ('0),
+        .i_hw_write_enable  ('0),
+        .i_hw_write_data    ('0),
         .i_hw_set           ('0),
         .i_hw_clear         ('0),
-        .i_value            ('0),
+        .i_value            (INITIAL_VALUE),
         .i_mask             ('1),
-        .o_value            (o_mip_mtip),
+        .o_value            (),
         .o_value_unmasked   ()
       );
     end
@@ -1439,22 +1430,23 @@ module rice_csr_m_level
       rggen_bit_field_if #(1) bit_field_sub_if();
       `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 11, 1)
       rggen_bit_field #(
-        .WIDTH          (1),
-        .INITIAL_VALUE  (INITIAL_VALUE)
+        .WIDTH              (1),
+        .STORAGE            (0),
+        .EXTERNAL_READ_DATA (1)
       ) u_bit_field (
-        .i_clk              (i_clk),
-        .i_rst_n            (i_rst_n),
+        .i_clk              ('0),
+        .i_rst_n            ('0),
         .bit_field_if       (bit_field_sub_if),
         .o_write_trigger    (),
         .o_read_trigger     (),
-        .i_sw_write_enable  ('1),
-        .i_hw_write_enable  (i_mip_meip_set),
-        .i_hw_write_data    (i_mip_meip),
+        .i_sw_write_enable  ('0),
+        .i_hw_write_enable  ('0),
+        .i_hw_write_data    ('0),
         .i_hw_set           ('0),
         .i_hw_clear         ('0),
-        .i_value            ('0),
+        .i_value            (INITIAL_VALUE),
         .i_mask             ('1),
-        .o_value            (o_mip_meip),
+        .o_value            (),
         .o_value_unmasked   ()
       );
     end
