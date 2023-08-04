@@ -78,15 +78,11 @@ module rice_core_ex_stage
     logic [1:0] forwarding;
     forwarding[1] = wb_result.valid && (rs == wb_result.rd) && (rs != rice_core_rs'(0));
     forwarding[0] = ex_result.valid && (rs == ex_result.rd) && (rs != rice_core_rs'(0));
-    if (forwarding[1]) begin
-      return wb_result.rd_value;
-    end
-    else if (forwarding[0]) begin
-      return ex_result.rd_value;
-    end
-    else begin
-      return rs_value;
-    end
+    case (1'b1)
+      forwarding[0]:  return ex_result.rd_value;
+      forwarding[1]:  return wb_result.rd_value;
+      default:        return rs_value;
+    endcase
   endfunction
 
 //--------------------------------------------------------------
