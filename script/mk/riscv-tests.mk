@@ -4,8 +4,8 @@ CLEAN += *.dump
 
 PATH_RISCV_TESTS := $(PATH_TEST)/riscv/riscv-tests
 
-RISCV_TEST_NAME  := $(word 3,$(shell basename $$(pwd) | tr '_' ' '))
-RISCV_TEST_GROUP := $(word 2,$(shell basename $$(pwd) | tr '_' ' '))
+RISCV_TEST_NAME  := $(shell basename $$(pwd) | cut -d '_' -f 3-)
+RISCV_TEST_GROUP := $(shell basename $$(pwd) | cut -d '_' -f 2)
 RISCV_TEST_DIR   := $(PATH_RISCV_TESTS)/$(RISCV_TEST_GROUP)
 RISCV_TEST_XLEN  ?= 32
 
