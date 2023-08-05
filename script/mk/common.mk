@@ -16,17 +16,12 @@ VERBOSITY        ?= UVM_LOW
 TIMEOUT          ?= 1_000_000
 ERROR_COUNT      ?= 1
 
-RISCV_TESTS ?= off
-
 -include $(PATH_SCRIPT)/mk/flgen.mk
 -include $(PATH_SCRIPT)/mk/vcs.mk
-ifeq ($(strip $(RISCV_TESTS)), on)
-  -include $(PATH_SCRIPT)/mk/riscv-tests.mk
-endif
 
 CLEAN += *.log
 
-.PHONY:	clean
+.PHONY: clean
 
 clean:
 	rm -rf $(CLEAN)

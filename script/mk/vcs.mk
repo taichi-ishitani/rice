@@ -26,34 +26,34 @@ SIMV_ARGS += +UVM_MAX_QUIT_COUNT=$(ERROR_COUNT),no
 
 ifeq ($(strip $(GUI)), verdi)
   VCS_ARGS += -debug_access+all
-	VCS_ARGS += -kdb
-	VCS_ARGS += +vcs+fsdbon
+  VCS_ARGS += -kdb
+  VCS_ARGS += +vcs+fsdbon
 
-	SIMV_ARGS += -gui=verdi
-	SIMV_ARGS += +fsdb+struct=on
-	SIMV_ARGS += +fsdb+packedmda=on
+  SIMV_ARGS += -gui=verdi
+  SIMV_ARGS += +fsdb+struct=on
+  SIMV_ARGS += +fsdb+packedmda=on
 endif
 ifeq ($(strip $(GUI)), dve)
   VCS_ARGS += -debug_access+all
-	VCS_ARGS += +vcs+vcdpluson
+  VCS_ARGS += +vcs+vcdpluson
 
-	SIMV_ARGS += -gui=dve
+  SIMV_ARGS += -gui=dve
 endif
 
 ifeq ($(strip $(DUMP)), fsdb)
   VCS_ARGS += -debug_access
-	VCS_ARGS += -kdb
-	VCS_ARGS += +vcs+fsdbon
+  VCS_ARGS += -kdb
+  VCS_ARGS += +vcs+fsdbon
 
-	SIMV_ARGS += +fsdb+struct=on
-	SIMV_ARGS += +fsdb+packedmda=on
-	SIMV_ARGS += +fsdbfile+dump.fsdb
+  SIMV_ARGS += +fsdb+struct=on
+  SIMV_ARGS += +fsdb+packedmda=on
+  SIMV_ARGS += +fsdbfile+dump.fsdb
 endif
 ifeq ($(strip $(DUMP)), vpd)
   VCS_ARGS += -debug_access
-	VCS_ARGS += +vcs+vcdpluson
+  VCS_ARGS += +vcs+vcdpluson
 
-	SIMV_ARGS += -vpd_file=dump.vpd
+  SIMV_ARGS += -vpd_file=dump.vpd
 endif
 
 ifeq ($(strip $(RANDOM_SEED)), auto)
