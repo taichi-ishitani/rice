@@ -277,13 +277,13 @@ module rice_core_lsu
     data  = read_data[8*offset+:XLEN];
     case (memory_access.access_mode)
       RICE_CORE_MEMORY_ACCESS_MODE_B:
-        return XLEN'(data[7:0]);
-      RICE_CORE_MEMORY_ACCESS_MODE_BU:
         return {{XLEN-7{data[7]}}, data[6:0]};
+      RICE_CORE_MEMORY_ACCESS_MODE_BU:
+        return XLEN'(data[7:0]);
       RICE_CORE_MEMORY_ACCESS_MODE_H:
-        return XLEN'(data[15:0]);
-      RICE_CORE_MEMORY_ACCESS_MODE_HU:
         return {{XLEN-15{data[15]}}, data[14:0]};
+      RICE_CORE_MEMORY_ACCESS_MODE_HU:
+        return XLEN'(data[15:0]);
       default:
         return data;
     endcase
