@@ -32,7 +32,7 @@ class tb_riscv_test_base #(
     `uvm_info(
       "LOAD_INST_DATA",
       $sformatf("load inst data from %s", riscv_test_file),
-      UVM_MEDIUM
+      UVM_NONE
     )
 
     fp  = $fopen(riscv_test_file, "r");
@@ -76,8 +76,7 @@ class tb_riscv_test_base #(
     if (bus_item.data == 1) begin
       `uvm_info(
         "CHECK_RESULT",
-        "all tests are passed",
-        UVM_MEDIUM
+        "all tests are passed", UVM_NONE
       )
     end
     else begin
