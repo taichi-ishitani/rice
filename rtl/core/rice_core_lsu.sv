@@ -36,6 +36,7 @@ module rice_core_lsu
   logic                     write_access_done;
   rice_core_state           response_state;
   logic [2*XLEN-1:0]        read_data;
+  logic [XLEN-1:0]          read_data_1st;
   logic                     read_access_done;
 
   always_comb begin
@@ -250,12 +251,19 @@ module rice_core_lsu
   end
 
   always_comb begin
-    read_data[0*XLEN+:XLEN] = data_bus_if.read_data;
+    if (response_state == DO_1ST_ACCESS) begin
+      read_data[0*XLEN+:XLEN] = data_bus_if.read_data;
+      read_data[1*XLEN+:XLEN] = data_bus_if.read_data;
+    end
+    else begin
+      read_data[0*XLEN+:XLEN] = read_data_1st;
+      read_data[1*XLEN+:XLEN] = data_bus_if.read_data;
+    end
   end
 
   always_ff @(posedge i_clk) begin
     if (data_bus_if.response_ack()) begin
-      read_data[1*XLEN+:XLEN] <= data_bus_if.read_data;
+      read_data_1st <= data_bus_if.read_data;
     end
   end
 
