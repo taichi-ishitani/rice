@@ -1,0 +1,96 @@
+lui:
+  { type: u, opcode: LUI }
+auipc:
+  { type: u, opcode: AUIPC }
+jal:
+  { type: j, opcode: JAL }
+jalr:
+  { type: i, opcode: JALR, funct3: 0b000 }
+beq:
+  { type: b, opcode: BRANCH, funct3: 0b000 }
+bne:
+  { type: b, opcode: BRANCH, funct3: 0b001 }
+blt:
+  { type: b, opcode: BRANCH, funct3: 0b100 }
+bge:
+  { type: b, opcode: BRANCH, funct3: 0b101 }
+bltu:
+  { type: b, opcode: BRANCH, funct3: 0b110 }
+bgeu:
+  { type: b, opcode: BRANCH, funct3: 0b111 }
+lb:
+  { type: i, opcode: LOAD, funct3: 0b000 }
+lh:
+  { type: i, opcode: LOAD, funct3: 0b001 }
+lw:
+  { type: i, opcode: LOAD, funct3: 0b010 }
+lbu:
+  { type: i, opcode: LOAD, funct3: 0b100 }
+lhu:
+  { type: i, opcode: LOAD, funct3: 0b101 }
+sb:
+  { type: s, opcode: STORE, funct3: 0b000 }
+sh:
+  { type: s, opcode: STORE, funct3: 0b001 }
+sw:
+  { type: s, opcode: STORE, funct3: 0b010 }
+addi:
+  { type: i, opcode: OP_IMM, funct3: 0b000 }
+slti:
+  { type: i, opcode: OP_IMM, funct3: 0b010 }
+sltiu:
+  { type: i, opcode: OP_IMM, funct3: 0b011 }
+xori:
+  { type: i, opcode: OP_IMM, funct3: 0b100 }
+ori:
+  { type: i, opcode: OP_IMM, funct3: 0b110 }
+andi:
+  { type: i, opcode: OP_IMM, funct3: 0b111 }
+slli:
+  { type: i, opcode: OP_IMM, funct3: 0b001, imm: '0000000xxxxx' }
+srli:
+  { type: i, opcode: OP_IMM, funct3: 0b101, imm: '0000000xxxxx' }
+srai:
+  { type: i, opcode: OP_IMM, funct3: 0b101, imm: '0100000xxxxx' }
+add:
+  { type: r, opcode: OP, funct3: 0b000, funct7: 0b0000000 }
+sub:
+  { type: r, opcode: OP, funct3: 0b000, funct7: 0b0100000 }
+sll:
+  { type: r, opcode: OP, funct3: 0b001, funct7: 0b0000000 }
+slt:
+  { type: r, opcode: OP, funct3: 0b010, funct7: 0b0000000 }
+sltu:
+  { type: r, opcode: OP, funct3: 0b011, funct7: 0b0000000 }
+xor:
+  { type: r, opcode: OP, funct3: 0b100, funct7: 0b0000000 }
+srl:
+  { type: r, opcode: OP, funct3: 0b101, funct7: 0b0000000 }
+sra:
+  { type: r, opcode: OP, funct3: 0b101, funct7: 0b0100000 }
+or:
+  { type: r, opcode: OP, funct3: 0b110, funct7: 0b0000000 }
+and:
+  { type: r, opcode: OP, funct3: 0b111, funct7: 0b0000000 }
+fence:
+  { type: i, opcode: MISC_MEM, rd: 0, funct3: 0b000, rs1: 0, imm: '0000xxxxxxxx'}
+fence_i:
+  { type: i, opcode: MISC_MEM, rd: 0, funct3: 0b001, rs1: 0, imm: 0}
+ecall:
+  { type: i, opcode: SYSTEM, rd: 0, funct3: 0b000, rs1: 0, imm: 0b000000000000 }
+ebreak:
+  { type: i, opcode: SYSTEM, rd: 0, funct3: 0b000, rs1: 0, imm: 0b000000000001 }
+mret:
+  { type: i, opcode: SYSTEM, rd: 0, funct3: 0b000, rs1: 0, imm: 0b001100000010 }
+csrrw:
+  { type: i, opcode: SYSTEM, funct3: 0b001 }
+csrrs:
+  { type: i, opcode: SYSTEM, funct3: 0b010 }
+csrrc:
+  { type: i, opcode: SYSTEM, funct3: 0b011 }
+csrrwi:
+  { type: i, opcode: SYSTEM, funct3: 0b101 }
+csrrsi:
+  { type: i, opcode: SYSTEM, funct3: 0b110 }
+csrrci:
+  { type: i, opcode: SYSTEM, funct3: 0b111 }

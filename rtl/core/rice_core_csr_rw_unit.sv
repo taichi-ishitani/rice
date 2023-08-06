@@ -1,12 +1,13 @@
 module rice_core_csr_rw_unit
-  import  rice_core_pkg::*;
+  import  rice_riscv_pkg::*,
+          rice_core_pkg::*;
 #(
   parameter int XLEN  = 32
 )(
   input   var                       i_clk,
   input   var                       i_rst_n,
   input   var                       i_valid,
-  input   var rice_core_rs          i_rs1,
+  input   var rice_riscv_rs         i_rs1,
   input   var [XLEN-1:0]            i_rs1_value,
   input   var [XLEN-1:0]            i_imm_value,
   input   var rice_core_csr_access  i_csr_access,
@@ -124,7 +125,7 @@ module rice_core_csr_rw_unit
   function automatic logic [XLEN-1:0] get_write_data(
     rice_core_csr_access  csr_access,
     logic                 write_only,
-    rice_core_rs          rs1,
+    rice_riscv_rs         rs1,
     logic [XLEN-1:0]      rs1_value,
     logic [XLEN-1:0]      read_data
   );

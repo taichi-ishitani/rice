@@ -4,15 +4,15 @@ typedef logic [XLEN-1:0]  rice_core_pc; \
 typedef struct packed { \
   logic           valid; \
   rice_core_pc    pc; \
-  rice_core_inst  inst; \
+  rice_riscv_inst inst; \
 } rice_core_if_result; \
 typedef struct packed { \
   logic                       valid; \
   rice_core_pc                pc; \
-  rice_core_inst              inst; \
-  rice_core_rs                rs1; \
-  rice_core_rs                rs2; \
-  rice_core_rd                rd; \
+  rice_riscv_inst             inst; \
+  rice_riscv_rs               rs1; \
+  rice_riscv_rs               rs2; \
+  rice_riscv_rd               rd; \
   rice_core_value             rs1_value; \
   rice_core_value             rs2_value; \
   rice_core_value             imm_value; \
@@ -25,6 +25,6 @@ typedef struct packed { \
 } rice_core_id_result; \
 typedef struct packed { \
   logic           valid; \
-  rice_core_rd    rd; \
+  rice_riscv_rd   rd; \
   rice_core_value rd_value; \
 } rice_core_ex_result;

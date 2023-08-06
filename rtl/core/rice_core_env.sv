@@ -1,5 +1,6 @@
 module rice_core_env
-  import  rice_core_pkg::*;
+  import  rice_riscv_pkg::*,
+          rice_core_pkg::*;
 #(
   parameter int XLEN  = 32
 )(

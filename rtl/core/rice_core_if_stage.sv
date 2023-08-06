@@ -1,5 +1,6 @@
 module rice_core_if_stage
-  import  rice_core_pkg::*;
+  import  rice_riscv_pkg::*,
+          rice_core_pkg::*;
 #(
   parameter int             XLEN        = 32,
   parameter int             FIFO_DEPTH  = 4,
@@ -24,7 +25,7 @@ module rice_core_if_stage
   logic                   fifo_push;
   logic                   fifo_pop;
   rice_core_pc            pc_fetched;
-  rice_core_inst          inst;
+  rice_riscv_inst         inst;
   logic                   flush;
   logic                   flush_busy;
   logic                   flush_done;
@@ -115,9 +116,9 @@ module rice_core_if_stage
   end
 
   pzbcm_fifo #(
-    .TYPE       (rice_core_inst ),
-    .DEPTH      (FIFO_DEPTH     ),
-    .THRESHOLD  (FIFO_DEPTH - 2 )
+    .TYPE       (rice_riscv_inst  ),
+    .DEPTH      (FIFO_DEPTH       ),
+    .THRESHOLD  (FIFO_DEPTH - 2   )
   ) u_inst_fifo (
     .i_clk          (i_clk                  ),
     .i_rst_n        (i_rst_n                ),

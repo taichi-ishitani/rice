@@ -1,5 +1,6 @@
 module rice_core_register_file
-  import  rice_core_pkg::*;
+  import  rice_riscv_pkg::*,
+          rice_core_pkg::*;
 #(
   parameter int XLEN  = 32
 )(
@@ -29,7 +30,7 @@ module rice_core_register_file
   end
 
   always_ff @(posedge i_clk) begin
-    if (ex_result.valid && (ex_result.rd != rice_core_rd'(0))) begin
+    if (ex_result.valid && (ex_result.rd != rice_riscv_rd'(0))) begin
       register_file[ex_result.rd] <= ex_result.rd_value;
     end
   end

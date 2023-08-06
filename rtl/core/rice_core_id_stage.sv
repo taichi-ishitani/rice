@@ -1,5 +1,7 @@
 module rice_core_id_stage
-  import  rice_core_pkg::*;
+  import  rice_riscv_pkg::*,
+          rice_riscv_inst_matcher_pkg::*,
+          rice_core_pkg::*;
 #(
   parameter int XLEN  = 32
 )(
@@ -52,85 +54,83 @@ module rice_core_id_stage
     end
   end
 
-  function automatic rice_core_rs decode_rs1(rice_core_inst inst_bits);
-    rice_core_inst_r_type inst;
-    rice_core_inst_type   inst_type;
-    inst      = rice_core_inst_r_type'(inst_bits);
+  function automatic rice_riscv_rs decode_rs1(rice_riscv_inst inst_bits);
+    rice_riscv_inst_r_type  inst;
+    rice_riscv_inst_type    inst_type;
+    inst      = rice_riscv_inst_r_type'(inst_bits);
     inst_type = get_inst_type(inst.opcode);
     case (inst_type)
-      RICE_CORE_INST_TYPE_U,
-      RICE_CORE_INST_TYPE_J:  return rice_core_rs'(0);
+      RICE_RISCV_INST_TYPE_U,
+      RICE_RISCV_INST_TYPE_J: return rice_riscv_rs'(0);
       default:                return inst.rs1;
     endcase
   endfunction
 
-  function automatic rice_core_rs decode_rs2(rice_core_inst inst_bits);
-    rice_core_inst_r_type inst;
-    rice_core_inst_type   inst_type;
-    inst      = rice_core_inst_r_type'(inst_bits);
+  function automatic rice_riscv_rs decode_rs2(rice_riscv_inst inst_bits);
+    rice_riscv_inst_r_type  inst;
+    rice_riscv_inst_type    inst_type;
+    inst      = rice_riscv_inst_r_type'(inst_bits);
     inst_type = get_inst_type(inst.opcode);
     case (inst_type)
-      RICE_CORE_INST_TYPE_I,
-      RICE_CORE_INST_TYPE_U,
-      RICE_CORE_INST_TYPE_J:  return rice_core_rs'(0);
+      RICE_RISCV_INST_TYPE_I,
+      RICE_RISCV_INST_TYPE_U,
+      RICE_RISCV_INST_TYPE_J: return rice_riscv_rs'(0);
       default:                return inst.rs2;
     endcase
   endfunction
 
-  function automatic rice_core_rd decode_rd(rice_core_inst inst_bits);
-    rice_core_inst_r_type inst;
-    rice_core_inst_type   inst_type;
-    inst      = rice_core_inst_r_type'(inst_bits);
+  function automatic rice_riscv_rd decode_rd(rice_riscv_inst inst_bits);
+    rice_riscv_inst_r_type  inst;
+    rice_riscv_inst_type    inst_type;
+    inst      = rice_riscv_inst_r_type'(inst_bits);
     inst_type = get_inst_type(inst.opcode);
     case (inst_type)
-      RICE_CORE_INST_TYPE_S,
-      RICE_CORE_INST_TYPE_B:  return rice_core_rd'(0);
+      RICE_RISCV_INST_TYPE_S,
+      RICE_RISCV_INST_TYPE_B: return rice_riscv_rd'(0);
       default:                return inst.rd;
     endcase
   endfunction
 
   function automatic rice_core_value get_rs1_value(
-    rice_core_inst          inst_bits,
+    rice_riscv_inst         inst_bits,
     rice_core_value [31:0]  register_file
   );
-    rice_core_inst_r_type inst;
-    inst  = rice_core_inst_r_type'(inst_bits);
+    rice_riscv_inst_r_type  inst;
+    inst  = rice_riscv_inst_r_type'(inst_bits);
     return register_file[inst.rs1];
   endfunction
 
   function automatic rice_core_value get_rs2_value(
-    rice_core_inst          inst_bits,
+    rice_riscv_inst         inst_bits,
     rice_core_value [31:0]  register_file
   );
-    rice_core_inst_r_type inst;
-    inst  = rice_core_inst_r_type'(inst_bits);
+    rice_riscv_inst_r_type  inst;
+    inst  = rice_riscv_inst_r_type'(inst_bits);
     return register_file[inst.rs2];
   endfunction
 
-  function automatic rice_core_value get_imm_value(
-    rice_core_inst  inst_bits
-  );
-    rice_core_inst_i_type inst_i;
-    rice_core_inst_s_type inst_s;
-    rice_core_inst_b_type inst_b;
-    rice_core_inst_u_type inst_u;
-    rice_core_inst_j_type inst_j;
-    rice_core_inst_type   inst_type;
+  function automatic rice_core_value get_imm_value(rice_riscv_inst inst_bits);
+    rice_riscv_inst_i_type  inst_i;
+    rice_riscv_inst_s_type  inst_s;
+    rice_riscv_inst_b_type  inst_b;
+    rice_riscv_inst_u_type  inst_u;
+    rice_riscv_inst_j_type  inst_j;
+    rice_riscv_inst_type    inst_type;
 
-    inst_i    = rice_core_inst_i_type'(inst_bits);
-    inst_s    = rice_core_inst_s_type'(inst_bits);
-    inst_b    = rice_core_inst_b_type'(inst_bits);
-    inst_u    = rice_core_inst_u_type'(inst_bits);
-    inst_j    = rice_core_inst_j_type'(inst_bits);
+    inst_i    = rice_riscv_inst_i_type'(inst_bits);
+    inst_s    = rice_riscv_inst_s_type'(inst_bits);
+    inst_b    = rice_riscv_inst_b_type'(inst_bits);
+    inst_u    = rice_riscv_inst_u_type'(inst_bits);
+    inst_j    = rice_riscv_inst_j_type'(inst_bits);
     inst_type = get_inst_type(inst_i.opcode);
     case (inst_type)
-      RICE_CORE_INST_TYPE_I:
+      RICE_RISCV_INST_TYPE_I:
         return {{(XLEN-11){inst_i.imm_11}}, inst_i.imm_10_0};
-      RICE_CORE_INST_TYPE_S:
+      RICE_RISCV_INST_TYPE_S:
         return {{(XLEN-11){inst_s.imm_11}}, inst_s.imm_10_5, inst_s.imm_4_0};
-      RICE_CORE_INST_TYPE_B:
+      RICE_RISCV_INST_TYPE_B:
         return {{(XLEN-12){inst_b.imm_12}}, inst_b.imm_11, inst_b.imm_10_5, inst_b.imm_4_1, 1'(0)};
-      RICE_CORE_INST_TYPE_U:
+      RICE_RISCV_INST_TYPE_U:
         return {{(XLEN-31){inst_u.imm_31}}, inst_u.imm_30_12, 12'(0)};
       default:
         return {{(XLEN-20){inst_j.imm_20}}, inst_j.imm_19_12, inst_j.imm_11, inst_j.imm_10_1, 1'(0)};
@@ -149,109 +149,96 @@ module rice_core_id_stage
     return operation;
   endfunction
 
-  function automatic rice_core_alu_operation decode_alu_operation(rice_core_inst inst_bits);
-    rice_core_inst_r_type   inst;
-
-    inst  = rice_core_inst_r_type'(inst_bits);
-    case ({inst.opcode, inst.rd, inst.funct3, inst.rs1, inst.funct7}) inside
-      {RICE_CORE_OPCODE_LUI, 5'b?????, 3'b???, 5'b?????, 7'b???_????}:      //  lui
+  function automatic rice_core_alu_operation decode_alu_operation(rice_riscv_inst inst_bits);
+    case (1'b1)
+      match_lui(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_IMM_0, RICE_CORE_ALU_SOURCE_IMM);
-      {RICE_CORE_OPCODE_AUIPC, 5'b?????, 3'b???, 5'b?????, 7'b???_????}:    //  auipc
+      match_auipc(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_PC, RICE_CORE_ALU_SOURCE_IMM);
-      {RICE_CORE_OPCODE_JAL, 5'b?????, 3'b???, 5'b?????, 7'b???_????}:      //  jal
+      match_jal(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_PC, RICE_CORE_ALU_SOURCE_IMM_4);
-      {RICE_CORE_OPCODE_JALR, 5'b?????, 3'b000, 5'b?????, 7'b???_????}:     //  jalr
+      match_jalr(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_PC, RICE_CORE_ALU_SOURCE_IMM_4);
-      {RICE_CORE_OPCODE_BRANCH, 5'b?????, 3'b000, 5'b?????, 7'b???_????}:   //  beq
+      match_beq(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_XOR, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_BRANCH, 5'b?????, 3'b001, 5'b?????, 7'b???_????}:   //  bne
+      match_bne(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_XOR, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_BRANCH, 5'b?????, 3'b100, 5'b?????, 7'b???_????}:   //  blt
+      match_blt(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_LT, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_BRANCH, 5'b?????, 3'b101, 5'b?????, 7'b???_????}:   //  bge
+      match_bge(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_LT, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_BRANCH, 5'b?????, 3'b110, 5'b?????, 7'b???_????}:   //  bltu
+      match_bltu(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_LTU, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_BRANCH, 5'b?????, 3'b111, 5'b?????, 7'b???_????}:   //  bgeu
+      match_bgeu(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_LTU, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_OP_IMM, 5'b?????, 3'b000, 5'b?????, 7'b???_????}:   //  addi
+      match_addi(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
-      {RICE_CORE_OPCODE_OP_IMM, 5'b?????, 3'b010, 5'b?????, 7'b???_????}:   //  slti
+      match_slti(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_LT, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
-      {RICE_CORE_OPCODE_OP_IMM, 5'b?????, 3'b011, 5'b?????, 7'b???_????}:   //  sltiu
+      match_sltiu(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_LTU, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
-      {RICE_CORE_OPCODE_OP_IMM, 5'b?????, 3'b100, 5'b?????, 7'b???_????}:   //  xori
+      match_xori(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_XOR, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
-      {RICE_CORE_OPCODE_OP_IMM, 5'b?????, 3'b110, 5'b?????, 7'b???_????}:   //  ori
+      match_ori(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_OR, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
-      {RICE_CORE_OPCODE_OP_IMM, 5'b?????, 3'b111, 5'b?????, 7'b???_????}:   //  andi
+      match_andi(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_AND, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
-      {RICE_CORE_OPCODE_OP_IMM, 5'b?????, 3'b001, 5'b?????, 7'b000_0000}:   //  slli
+      match_slli(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_SLL, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
-      {RICE_CORE_OPCODE_OP_IMM, 5'b?????, 3'b101, 5'b?????, 7'b000_0000}:   //  srli
+      match_srli(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_SRL, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
-      {RICE_CORE_OPCODE_OP_IMM, 5'b?????, 3'b101, 5'b?????, 7'b010_0000}:   //  srai
+      match_srai(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_SRA, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
-      {RICE_CORE_OPCODE_OP, 5'b?????, 3'b000, 5'b?????, 7'b000_0000}:       //  add
+      match_add(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_OP, 5'b?????, 3'b000, 5'b?????, 7'b010_0000}:       //  sub
+      match_sub(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_SUB, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_OP, 5'b?????, 3'b010, 5'b?????, 7'b000_0000}:       //  slt
-        return get_alu_operation(RICE_CORE_ALU_LT, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_OP, 5'b?????, 3'b011, 5'b?????, 7'b000_0000}:       //  sltu
-        return get_alu_operation(RICE_CORE_ALU_LTU, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_OP, 5'b?????, 3'b100, 5'b?????, 7'b000_0000}:       //  xor
-        return get_alu_operation(RICE_CORE_ALU_XOR, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_OP, 5'b?????, 3'b110, 5'b?????, 7'b000_0000}:       //  or
-        return get_alu_operation(RICE_CORE_ALU_OR, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_OP, 5'b?????, 3'b111, 5'b?????, 7'b000_0000}:       //  and
-        return get_alu_operation(RICE_CORE_ALU_AND, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_OP, 5'b?????, 3'b001, 5'b?????, 7'b000_0000}:       //  sll
+      match_sll(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_SLL, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_OP, 5'b?????, 3'b101, 5'b?????, 7'b000_0000}:       //  srl
+      match_slt(inst_bits):
+        return get_alu_operation(RICE_CORE_ALU_LT, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
+      match_sltu(inst_bits):
+        return get_alu_operation(RICE_CORE_ALU_LTU, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
+      match_xor(inst_bits):
+        return get_alu_operation(RICE_CORE_ALU_XOR, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
+      match_srl(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_SRL, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_OP, 5'b?????, 3'b101, 5'b?????, 7'b010_0000}:       //  sra
+      match_sra(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_SRA, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
-      {RICE_CORE_OPCODE_MISC_MEM, 5'b00000, 3'b000, 5'b00000, 7'b000_0???}: //  fence
+      match_or(inst_bits):
+        return get_alu_operation(RICE_CORE_ALU_OR, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
+      match_and(inst_bits):
+        return get_alu_operation(RICE_CORE_ALU_AND, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
+      match_fence(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
       default:
         return get_alu_operation(RICE_CORE_ALU_NONE, RICE_CORE_ALU_SOURCE_IMM_0, RICE_CORE_ALU_SOURCE_IMM_0);
     endcase
   endfunction
 
-  function automatic rice_core_jamp_operation decode_jamp_operation(rice_core_inst inst_bits);
-    rice_core_inst_i_type     inst;
+  function automatic rice_core_jamp_operation decode_jamp_operation(rice_riscv_inst inst_bits);
     rice_core_jamp_operation  jamp_operation;
-    inst                = rice_core_inst_i_type'(inst_bits);
-    jamp_operation.jal  = (inst.opcode == RICE_CORE_OPCODE_JAL );
-    jamp_operation.jalr = (inst.opcode == RICE_CORE_OPCODE_JALR) && (inst.funct3 == 3'b000);
+    jamp_operation.jal  = match_jal(inst_bits);
+    jamp_operation.jalr = match_jalr(inst_bits);
     return jamp_operation;
   endfunction
 
-  function automatic rice_core_branch_operation decode_branch_operation(rice_core_inst inst_bits);
-    rice_core_inst_b_type       inst;
+  function automatic rice_core_branch_operation decode_branch_operation(rice_riscv_inst inst_bits);
     rice_core_branch_operation  branch_operation;
-
-    inst  = rice_core_inst_b_type'(inst_bits);
-    branch_operation.eq_ge  =
-      (inst.opcode == RICE_CORE_OPCODE_BRANCH) &&
-      (inst.funct3 inside {3'b000, 3'b101, 3'b111});
-    branch_operation.ne_lt  =
-      (inst.opcode == RICE_CORE_OPCODE_BRANCH) &&
-      (inst.funct3 inside {3'b001, 3'b100, 3'b110});
-
+    branch_operation.eq_ge  = match_beq(inst_bits) || match_bge(inst_bits) || match_bgeu(inst_bits);
+    branch_operation.ne_lt  = match_bne(inst_bits) || match_blt(inst_bits) || match_bltu(inst_bits);
     return branch_operation;
   endfunction
 
-  function automatic rice_core_memory_access decode_memory_access(rice_core_inst inst_bits);
-    rice_core_inst_r_type   inst;
+  function automatic rice_core_memory_access decode_memory_access(rice_riscv_inst inst_bits);
+    rice_riscv_inst_r_type  inst;
     rice_core_memory_access memory_access;
 
-    inst  = rice_core_inst_r_type'(inst_bits);
+    inst  = rice_riscv_inst_r_type'(inst_bits);
     case (inst.opcode)
-      RICE_CORE_OPCODE_LOAD:  memory_access.access_type = RICE_CORE_MEMORY_ACCESS_LOAD;
-      RICE_CORE_OPCODE_STORE: memory_access.access_type = RICE_CORE_MEMORY_ACCESS_STORE;
-      default:                memory_access.access_type = RICE_CORE_MEMORY_ACCESS_NONE;
+      RICE_RISCV_OPCODE_LOAD:   memory_access.access_type = RICE_CORE_MEMORY_ACCESS_LOAD;
+      RICE_RISCV_OPCODE_STORE:  memory_access.access_type = RICE_CORE_MEMORY_ACCESS_STORE;
+      default:                  memory_access.access_type = RICE_CORE_MEMORY_ACCESS_NONE;
     endcase
 
     memory_access.access_mode = rice_core_memory_access_mode'(inst.funct3);
@@ -259,30 +246,23 @@ module rice_core_id_stage
     return memory_access;
   endfunction
 
-  function automatic rice_core_csr_access decode_csr_access(rice_core_inst inst_bits);
-    rice_core_inst_i_type inst;
-
-    inst  = rice_core_inst_i_type'(inst_bits);
-    case ({inst.opcode, inst.funct3})
-      {RICE_CORE_OPCODE_SYSTEM, 3'b001}:  return RICE_CORE_CSR_ACCESS_RW;
-      {RICE_CORE_OPCODE_SYSTEM, 3'b101}:  return RICE_CORE_CSR_ACCESS_RWI;
-      {RICE_CORE_OPCODE_SYSTEM, 3'b010}:  return RICE_CORE_CSR_ACCESS_RS;
-      {RICE_CORE_OPCODE_SYSTEM, 3'b110}:  return RICE_CORE_CSR_ACCESS_RSI;
-      {RICE_CORE_OPCODE_SYSTEM, 3'b011}:  return RICE_CORE_CSR_ACCESS_RC;
-      {RICE_CORE_OPCODE_SYSTEM, 3'b111}:  return RICE_CORE_CSR_ACCESS_RCI;
-      default:                            return RICE_CORE_CSR_ACCESS_NONE;
+  function automatic rice_core_csr_access decode_csr_access(rice_riscv_inst inst_bits);
+    case (1'b1)
+      match_csrrw(inst_bits):   return RICE_CORE_CSR_ACCESS_RW;
+      match_csrrwi(inst_bits):  return RICE_CORE_CSR_ACCESS_RWI;
+      match_csrrs(inst_bits):   return RICE_CORE_CSR_ACCESS_RS;
+      match_csrrsi(inst_bits):  return RICE_CORE_CSR_ACCESS_RSI;
+      match_csrrc(inst_bits):   return RICE_CORE_CSR_ACCESS_RC;
+      match_csrrci(inst_bits):  return RICE_CORE_CSR_ACCESS_RCI;
+      default:                  return RICE_CORE_CSR_ACCESS_NONE;
     endcase
   endfunction
 
-  localparam  bit [31:0]  ECALL   = {12'h000, 5'h00, 3'b000, 5'h00, RICE_CORE_OPCODE_SYSTEM};
-  localparam  bit [31:0]  EBREAK  = {12'h001, 5'h00, 3'b000, 5'h00, RICE_CORE_OPCODE_SYSTEM};
-  localparam  bit [31:0]  MRET    = {12'h302, 5'h00, 3'b000, 5'h00, RICE_CORE_OPCODE_SYSTEM};
-
-  function automatic rice_core_trap_control decode_trap_control(rice_core_inst inst_bits);
+  function automatic rice_core_trap_control decode_trap_control(rice_riscv_inst inst_bits);
     rice_core_trap_control  trap_control;
-    trap_control.ecall  = inst_bits == ECALL;
-    trap_control.ebreak = inst_bits == EBREAK;
-    trap_control.mret   = inst_bits == MRET;
+    trap_control.ecall  = match_ecall(inst_bits);
+    trap_control.ebreak = match_ebreak(inst_bits);
+    trap_control.mret   = match_mret(inst_bits);
     return trap_control;
   endfunction
 
@@ -290,20 +270,20 @@ module rice_core_id_stage
 //  Debug
 //--------------------------------------------------------------
   if (RICE_CORE_DEBUG) begin : g_debug
-    rice_core_inst_r_type inst_r_type;
-    rice_core_inst_i_type inst_i_type;
-    rice_core_inst_s_type inst_s_type;
-    rice_core_inst_b_type inst_b_type;
-    rice_core_inst_u_type inst_u_type;
-    rice_core_inst_j_type inst_j_type;
+    rice_riscv_inst_r_type  inst_r_type;
+    rice_riscv_inst_i_type  inst_i_type;
+    rice_riscv_inst_s_type  inst_s_type;
+    rice_riscv_inst_b_type  inst_b_type;
+    rice_riscv_inst_u_type  inst_u_type;
+    rice_riscv_inst_j_type  inst_j_type;
 
     always_comb begin
-      inst_r_type = rice_core_inst_r_type'(if_result.inst);
-      inst_i_type = rice_core_inst_i_type'(if_result.inst);
-      inst_s_type = rice_core_inst_s_type'(if_result.inst);
-      inst_b_type = rice_core_inst_b_type'(if_result.inst);
-      inst_u_type = rice_core_inst_u_type'(if_result.inst);
-      inst_j_type = rice_core_inst_j_type'(if_result.inst);
+      inst_r_type = rice_riscv_inst_r_type'(if_result.inst);
+      inst_i_type = rice_riscv_inst_i_type'(if_result.inst);
+      inst_s_type = rice_riscv_inst_s_type'(if_result.inst);
+      inst_b_type = rice_riscv_inst_b_type'(if_result.inst);
+      inst_u_type = rice_riscv_inst_u_type'(if_result.inst);
+      inst_j_type = rice_riscv_inst_j_type'(if_result.inst);
     end
   end
 endmodule

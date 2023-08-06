@@ -1,5 +1,6 @@
 interface rice_core_env_if
-  import  rice_core_pkg::*;
+  import  rice_riscv_pkg::*,
+          rice_core_pkg::*;
 #(
   parameter int XLEN  = 32
 );
@@ -11,7 +12,7 @@ interface rice_core_env_if
   rice_core_exception       exception;
   logic                     mret;
   rice_core_pc              pc;
-  rice_core_inst            inst;
+  rice_riscv_inst           inst;
 
   modport env (
     output  privilege_level,

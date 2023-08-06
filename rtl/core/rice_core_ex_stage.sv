@@ -1,5 +1,6 @@
 module rice_core_ex_stage
-  import  rice_core_pkg::*;
+  import  rice_riscv_pkg::*,
+          rice_core_pkg::*;
 #(
   parameter int XLEN  = 32
 )(
@@ -70,14 +71,14 @@ module rice_core_ex_stage
   end
 
   function automatic rice_core_value get_rs_value(
-    rice_core_rs        rs,
+    rice_riscv_rs       rs,
     rice_core_value     rs_value,
     rice_core_ex_result wb_result,
     rice_core_ex_result ex_result
   );
     logic [1:0] forwarding;
-    forwarding[1] = wb_result.valid && (rs == wb_result.rd) && (rs != rice_core_rs'(0));
-    forwarding[0] = ex_result.valid && (rs == ex_result.rd) && (rs != rice_core_rs'(0));
+    forwarding[1] = wb_result.valid && (rs == wb_result.rd) && (rs != rice_riscv_rs'(0));
+    forwarding[0] = ex_result.valid && (rs == ex_result.rd) && (rs != rice_riscv_rs'(0));
     case (1'b1)
       forwarding[0]:  return ex_result.rd_value;
       forwarding[1]:  return wb_result.rd_value;
