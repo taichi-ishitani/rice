@@ -93,7 +93,7 @@ module rice_core_env
     mcause_code       = get_exception_code(env_if.exception);
   end
 
-  function automatic logic [EXCEPTION_CODE_WIDTH] get_exception_code(
+  function automatic logic [EXCEPTION_CODE_WIDTH-1:0] get_exception_code(
     rice_core_exception exception
   );
     for (int i = 0;i < $bits(rice_core_exception);++i) begin
