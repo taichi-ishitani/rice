@@ -120,18 +120,21 @@ module rice_core_ex_stage
   );
     rice_core_jamp_operation    jamp;
     rice_core_branch_operation  branch;
+    rice_core_ordering_control  ordering;
     rice_core_trap_control      trap;
-    logic [5:0]                 flush;
+    logic [6:0]                 flush;
 
     jamp      = id_result.jamp_operation;
     branch    = id_result.branch_operation;
+    ordering  = id_result.ordering_control;
     trap      = id_result.trap_control;
     flush[0]  = id_result.valid && jamp.jal;
     flush[1]  = id_result.valid && jamp.jalr;
     flush[2]  = id_result.valid && branch.eq_ge && (alu_data == '0);
     flush[3]  = id_result.valid && branch.ne_lt && (alu_data != '0);
-    flush[4]  = id_result.valid && trap.mret;
-    flush[5]  = exception != '0;
+    flush[4]  = id_result.valid && ordering.fence_i;
+    flush[5]  = id_result.valid && trap.mret;
+    flush[6]  = exception != '0;
 
     return flush != '0;
   endfunction
@@ -143,15 +146,18 @@ module rice_core_ex_stage
     rice_core_pc        trap_pc,
     rice_core_pc        return_pc
   );
-    rice_core_jamp_operation  jamp;
-    rice_core_trap_control    trap;
-    logic                     error;
-    rice_core_pc              pc;
+    rice_core_jamp_operation    jamp;
+    rice_core_ordering_control  ordering;
+    rice_core_trap_control      trap;
+    logic                       error;
+    rice_core_pc                pc;
 
-    jamp  = id_result.jamp_operation;
-    trap  = id_result.trap_control;
-    error = ex_error != '0;
+    jamp      = id_result.jamp_operation;
+    ordering  = id_result.ordering_control;
+    trap      = id_result.trap_control;
+    error     = ex_error != '0;
     case (1'b1)
+      ordering.fence_i: pc  = id_result.pc + XLEN'(4);
       trap.mret:        pc  = return_pc;
       exception != '0:  pc  = trap_pc;
       jamp.jalr:        pc  = rs1_value + id_result.imm_value;

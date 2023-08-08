@@ -9,6 +9,7 @@ RISCV_TESTS += riscv-tests_isa_rv32ui-p-bgeu
 RISCV_TESTS += riscv-tests_isa_rv32ui-p-blt
 RISCV_TESTS += riscv-tests_isa_rv32ui-p-bltu
 RISCV_TESTS += riscv-tests_isa_rv32ui-p-bne
+RISCV_TESTS += riscv-tests_isa_rv32ui-p-fence_i
 RISCV_TESTS += riscv-tests_isa_rv32ui-p-jal
 RISCV_TESTS += riscv-tests_isa_rv32ui-p-jalr
 RISCV_TESTS += riscv-tests_isa_rv32ui-p-lb

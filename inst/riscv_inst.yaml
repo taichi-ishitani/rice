@@ -75,7 +75,7 @@ and:
 fence:
   { type: i, opcode: MISC_MEM, rd: 0, funct3: 0b000, rs1: 0, imm: '0000xxxxxxxx'}
 fence_i:
-  { type: i, opcode: MISC_MEM, rd: 0, funct3: 0b001, rs1: 0, imm: 0}
+  { type: i, opcode: MISC_MEM, funct3: 0b001 }
 ecall:
   { type: i, opcode: SYSTEM, rd: 0, funct3: 0b000, rs1: 0, imm: 0b000000000000 }
 ebreak:

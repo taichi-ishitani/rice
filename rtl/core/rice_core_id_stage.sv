@@ -48,8 +48,9 @@ module rice_core_id_stage
         id_result.jamp_operation    <= decode_jamp_operation(if_result.inst);
         id_result.branch_operation  <= decode_branch_operation(if_result.inst);
         id_result.memory_access     <= decode_memory_access(if_result.inst);
-        id_result.csr_access        <= decode_csr_access(if_result.inst);
+        id_result.ordering_control  <= decode_ordering_control(if_result.inst);
         id_result.trap_control      <= decode_trap_control(if_result.inst);
+        id_result.csr_access        <= decode_csr_access(if_result.inst);
       end
     end
   end
@@ -246,6 +247,25 @@ module rice_core_id_stage
     return memory_access;
   endfunction
 
+  function automatic rice_core_ordering_control decode_ordering_control(rice_riscv_inst inst_bits);
+    rice_core_ordering_control  ordering_control;
+    rice_riscv_inst_i_type      inst;
+    inst                      = rice_riscv_inst_i_type'(inst_bits);
+    ordering_control.fence_i  = match_fence_i(inst_bits);
+    ordering_control.fence    = match_fence(inst_bits);
+    ordering_control.succ     = inst.imm_10_0[0+:4];
+    ordering_control.pred     = inst.imm_10_0[4+:4];
+    return ordering_control;
+  endfunction
+
+  function automatic rice_core_trap_control decode_trap_control(rice_riscv_inst inst_bits);
+    rice_core_trap_control  trap_control;
+    trap_control.ecall  = match_ecall(inst_bits);
+    trap_control.ebreak = match_ebreak(inst_bits);
+    trap_control.mret   = match_mret(inst_bits);
+    return trap_control;
+  endfunction
+
   function automatic rice_core_csr_access decode_csr_access(rice_riscv_inst inst_bits);
     case (1'b1)
       match_csrrw(inst_bits):   return RICE_CORE_CSR_ACCESS_RW;
@@ -256,14 +276,6 @@ module rice_core_id_stage
       match_csrrci(inst_bits):  return RICE_CORE_CSR_ACCESS_RCI;
       default:                  return RICE_CORE_CSR_ACCESS_NONE;
     endcase
-  endfunction
-
-  function automatic rice_core_trap_control decode_trap_control(rice_riscv_inst inst_bits);
-    rice_core_trap_control  trap_control;
-    trap_control.ecall  = match_ecall(inst_bits);
-    trap_control.ebreak = match_ebreak(inst_bits);
-    trap_control.mret   = match_mret(inst_bits);
-    return trap_control;
   endfunction
 
 //--------------------------------------------------------------

@@ -154,7 +154,7 @@ package rice_riscv_inst_matcher_pkg;
   endfunction
 
   function automatic logic match_fence_i(rice_riscv_inst inst_bits);
-    return inst_bits ==? {25'b0000000000000000000100000, RICE_RISCV_OPCODE_MISC_MEM};
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx001xxxxx, RICE_RISCV_OPCODE_MISC_MEM};
   endfunction
 
   function automatic logic match_ecall(rice_riscv_inst inst_bits);
