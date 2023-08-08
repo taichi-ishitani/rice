@@ -62,6 +62,10 @@ else
   SIMV_ARGS += +ntb_random_seed=$(RANDOM_SEED)
 endif
 
+ifdef PIPELINE_TRACE_FILE
+  SIMV_ARGS += +pipeline_trace_file=$(PIPELINE_TRACE_FILE)
+endif
+
 VCS_ARGS += -f $(FILELIST_COMPILE)
 VCS_ARGS += -top tb
 

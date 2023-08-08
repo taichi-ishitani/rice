@@ -18,11 +18,15 @@ class tb_rice_env_configuration_base #(
 
   function void post_randomize();
     super.post_randomize();
+    parse_plugargs();
     create_sub_cfg();
   endfunction
 
   virtual function void set_tb_context(CONTEXT tb_context);
     this.tb_context = tb_context;
+  endfunction
+
+  protected virtual function void parse_plugargs();
   endfunction
 
   protected virtual function void create_sub_cfg();

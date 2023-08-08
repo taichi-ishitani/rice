@@ -8,8 +8,20 @@ module rice_core (
   localparam  int XLEN  = 32;
 
   rice_core_pipeline_if #(XLEN) pipeline_if();
+  rice_bus_if #(XLEN, XLEN)     inst_if();
+  rice_bus_if #(XLEN, XLEN)     data_if();
   rice_core_env_if #(XLEN)      env_if();
   rice_bus_if #(12, XLEN)       csr_if();
+
+  rice_bus_connector u_isnt_bus_connector (
+    .slave_if   (inst_if      ),
+    .master_if  (inst_bus_if  )
+  );
+
+  rice_bus_connector u_data_bus_connector (
+    .slave_if   (data_if      ),
+    .master_if  (data_bus_if  )
+  );
 
   rice_core_if_stage #(
     .XLEN (XLEN )
@@ -18,7 +30,7 @@ module rice_core (
     .i_rst_n      (i_rst_n      ),
     .i_enable     (i_enable     ),
     .pipeline_if  (pipeline_if  ),
-    .inst_bus_if  (inst_bus_if  )
+    .inst_bus_if  (inst_if      )
   );
 
   rice_core_id_stage #(
@@ -38,7 +50,7 @@ module rice_core (
     .i_enable     (i_enable     ),
     .pipeline_if  (pipeline_if  ),
     .env_if       (env_if       ),
-    .data_bus_if  (data_bus_if  ),
+    .data_bus_if  (data_if      ),
     .csr_if       (csr_if       )
   );
 

@@ -1,6 +1,7 @@
 class tb_rice_core_env_context extends tb_rice_env_context_base;
-  tb_rice_bus_vif inst_bus_vif;
-  tb_rice_bus_vif data_bus_vif;
+  tb_rice_bus_vif                       inst_bus_vif;
+  tb_rice_bus_vif                       data_bus_vif;
+  tb_rice_core_env_pipeline_monitor_vif pipeline_monitor_vif;
   `tue_object_default_constructor(tb_rice_core_env_context)
   `uvm_object_utils(tb_rice_core_env_context)
 endclass
@@ -10,6 +11,12 @@ class tb_rice_core_env_configuration extends tb_rice_env_configuration_base #(
 );
   tb_rice_bus_configuration inst_bus_cfg;
   tb_rice_bus_configuration data_bus_cfg;
+  string                    pipeline_trace_file;
+
+  protected function void parse_plugargs();
+    super.parse_plugargs();
+    `tue_define_plusarg_string(+pipeline_trace_file, pipeline_trace_file)
+  endfunction
 
   protected function void create_sub_cfg();
     inst_bus_cfg  = create_bus_cfg("inst_bus_cfg", tb_context.inst_bus_vif);

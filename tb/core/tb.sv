@@ -40,14 +40,23 @@ module tb;
     .pipeline_if  (pipeline_if  )
   );
 
+  bind  duv
+  tb_rice_core_env_pipeline_monitor_if_wrapper u_pipeline_monitor (
+    .i_clk        (i_clk        ),
+    .i_rst_n      (i_rst_n      ),
+    .inst_bus_if  (inst_if      ),
+    .pipeline_if  (pipeline_if  )
+  );
+
   function automatic tb_rice_core_env_context create_tb_context();
     tb_rice_core_env_context  tb_context;
 
-    tb_context              = new("tb_context");
-    tb_context.clock_vif    = clock_if;
-    tb_context.reset_vif    = reset_if;
-    tb_context.inst_bus_vif = u_inst_bus_bfm.bfm_if;
-    tb_context.data_bus_vif = u_data_bus_bfm.bfm_if;
+    tb_context                      = new("tb_context");
+    tb_context.clock_vif            = clock_if;
+    tb_context.reset_vif            = reset_if;
+    tb_context.inst_bus_vif         = u_inst_bus_bfm.bfm_if;
+    tb_context.data_bus_vif         = u_data_bus_bfm.bfm_if;
+    tb_context.pipeline_monitor_vif = duv.u_pipeline_monitor.monitor_if;
 
     return tb_context;
   endfunction
