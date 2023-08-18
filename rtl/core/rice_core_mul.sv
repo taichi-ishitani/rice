@@ -27,7 +27,7 @@ module rice_core_mul
 
   always_comb begin
     o_result_valid  = last;
-    if (i_mul_operation.rd_high) begin
+    if (is_rd_high(i_mul_operation)) begin
       o_result  = product[0][1*XLEN+:XLEN];
     end
     else begin
@@ -61,7 +61,7 @@ module rice_core_mul
       multiplier  <= {i_rs2_value, 1'(0)};
     end
     else if (busy) begin
-      if (i_mul_operation.rs2_signed) begin
+      if (is_rs2_signed(i_mul_operation)) begin
         multiplier  <= {{2{multiplier[MULTIPLIER_WIDTH-1]}}, multiplier[MULTIPLIER_WIDTH-1:2]};
       end
       else begin
@@ -86,19 +86,33 @@ module rice_core_mul
     end
   end
 
+  function automatic logic is_rd_high(rice_core_mul_operation mul_operation);
+    return !mul_operation.mul;
+  endfunction
+
+  function automatic logic is_rs1_signed(rice_core_mul_operation mul_operation);
+    return mul_operation.mulh || mul_operation.mulhsu;
+  endfunction
+
+  function automatic logic is_rs2_signed(rice_core_mul_operation mul_operation);
+    return mul_operation.mulh;
+  endfunction
+
   function automatic logic [PRODUCT_WIDTH-1:0] calc_product(
     rice_core_mul_operation       mul_operation,
     logic [XLEN-1:0]              rs1_value,
     logic [MULTIPLIER_WIDTH-1:0]  multiplier,
     logic [PRODUCT_WIDTH-1:0]     product
   );
+    logic                     rs1_signed;
     logic [SUM_WIDTH-1:0]     a;
     logic [SUM_WIDTH-1:0]     b;
     logic [SUM_WIDTH-1:0]     c;
     logic [PRODUCT_WIDTH-1:0] product_next;
 
-    a = product[PRODUCT_WIDTH-1-:SUM_WIDTH];
-    case ({mul_operation.rs1_signed, multiplier[2:0]}) inside
+    rs1_signed  = is_rs1_signed(mul_operation);
+    a           = product[PRODUCT_WIDTH-1-:SUM_WIDTH];
+    case ({rs1_signed, multiplier[2:0]}) inside
       4'b0011,
       4'b0100:  b = SUM_WIDTH'({rs1_value, 1'(0)});
       4'b0?01,

@@ -30,11 +30,18 @@ package rice_core_pkg;
   } rice_core_alu_operation;
 
   typedef struct packed {
-    logic valid;
-    logic rd_high;
-    logic rs1_signed;
-    logic rs2_signed;
+    logic mul;
+    logic mulh;
+    logic mulhsu;
+    logic mulhu;
   } rice_core_mul_operation;
+
+  typedef struct packed {
+    logic div;
+    logic divu;
+    logic rem;
+    logic remu;
+  } rice_core_div_operation;
 
   typedef struct packed {
     logic jal;

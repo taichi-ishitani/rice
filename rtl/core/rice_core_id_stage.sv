@@ -46,6 +46,7 @@ module rice_core_id_stage
         id_result.imm_value         <= get_imm_value(if_result.inst);
         id_result.alu_operation     <= decode_alu_operation(if_result.inst);
         id_result.mul_operation     <= decode_mul_operation(if_result.inst);
+        id_result.div_operation     <= decode_div_operation(if_result.inst);
         id_result.jamp_operation    <= decode_jamp_operation(if_result.inst);
         id_result.branch_operation  <= decode_branch_operation(if_result.inst);
         id_result.memory_access     <= decode_memory_access(if_result.inst);
@@ -220,18 +221,24 @@ module rice_core_id_stage
 
   function automatic rice_core_mul_operation decode_mul_operation(rice_riscv_inst inst_bits);
     rice_core_mul_operation mul_operation;
-    logic [3:0]             mul;
 
-    mul[0]                    = match_mul(inst_bits);
-    mul[1]                    = match_mulh(inst_bits);
-    mul[2]                    = match_mulhsu(inst_bits);
-    mul[3]                    = match_mulhu(inst_bits);
-    mul_operation.valid       = mul != '0;
-    mul_operation.rd_high     = !mul[0];
-    mul_operation.rs1_signed  = mul[1] || mul[2];
-    mul_operation.rs2_signed  = mul[1];
+    mul_operation.mul     = match_mul(inst_bits);
+    mul_operation.mulh    = match_mulh(inst_bits);
+    mul_operation.mulhsu  = match_mulhsu(inst_bits);
+    mul_operation.mulhu   = match_mulhu(inst_bits);
 
     return mul_operation;
+  endfunction
+
+  function automatic rice_core_div_operation decode_div_operation(rice_riscv_inst inst_bits);
+    rice_core_div_operation div_operation;
+
+    div_operation.div   = match_div(inst_bits);
+    div_operation.divu  = match_divu(inst_bits);
+    div_operation.rem   = match_rem(inst_bits);
+    div_operation.remu  = match_remu(inst_bits);
+
+    return div_operation;
   endfunction
 
   function automatic rice_core_jamp_operation decode_jamp_operation(rice_riscv_inst inst_bits);

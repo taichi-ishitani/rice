@@ -203,6 +203,10 @@ class tb_rice_riscv_inst_item extends uvm_object;
           {3'b001, 7'b0000001}: inst  = TB_RICE_RISCV_INTS_MULH;
           {3'b010, 7'b0000001}: inst  = TB_RICE_RISCV_INTS_MULHSU;
           {3'b011, 7'b0000001}: inst  = TB_RICE_RISCV_INTS_MULHU;
+          {3'b100, 7'b0000001}: inst  = TB_RICE_RISCV_INTS_DIV;
+          {3'b101, 7'b0000001}: inst  = TB_RICE_RISCV_INTS_DIVU;
+          {3'b110, 7'b0000001}: inst  = TB_RICE_RISCV_INTS_REM;
+          {3'b111, 7'b0000001}: inst  = TB_RICE_RISCV_INTS_REMU;
         endcase
       end
       TB_RICE_RISCV_OPCODE_MISC_MEM: begin

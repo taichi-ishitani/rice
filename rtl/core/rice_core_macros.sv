@@ -18,6 +18,7 @@ typedef struct packed { \
   rice_core_value             imm_value; \
   rice_core_alu_operation     alu_operation; \
   rice_core_mul_operation     mul_operation; \
+  rice_core_div_operation     div_operation; \
   rice_core_jamp_operation    jamp_operation; \
   rice_core_branch_operation  branch_operation; \
   rice_core_memory_access     memory_access; \

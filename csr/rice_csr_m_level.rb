@@ -134,6 +134,10 @@ register_block {
       bit_assignment lsb: 8, width: 1; type :rw; initial_value 1
     }
     bit_field {
+      name 'support_m'
+      bit_assignment lsb: 12, width: 1; type :rw; initial_value 1
+    }
+    bit_field {
       name 'mxl'
       bit_assignment lsb: XLEN - 2, width: 2; type :rof
       initial_value case XLEN

@@ -49,3 +49,7 @@ RISCV_TESTS += riscv-tests_isa_rv32um-p-mul
 RISCV_TESTS += riscv-tests_isa_rv32um-p-mulh
 RISCV_TESTS += riscv-tests_isa_rv32um-p-mulhsu
 RISCV_TESTS += riscv-tests_isa_rv32um-p-mulhu
+RISCV_TESTS += riscv-tests_isa_rv32um-p-div
+RISCV_TESTS += riscv-tests_isa_rv32um-p-divu
+RISCV_TESTS += riscv-tests_isa_rv32um-p-rem
+RISCV_TESTS += riscv-tests_isa_rv32um-p-remu

@@ -102,3 +102,11 @@ mulhsu:
   { type: r, opcode: OP, funct3: 0b010, funct7: 0b0000001 }
 mulhu:
   { type: r, opcode: OP, funct3: 0b011, funct7: 0b0000001 }
+div:
+  { type: r, opcode: OP, funct3: 0b100, funct7: 0b0000001 }
+divu:
+  { type: r, opcode: OP, funct3: 0b101, funct7: 0b0000001 }
+rem:
+  { type: r, opcode: OP, funct3: 0b110, funct7: 0b0000001 }
+remu:
+  { type: r, opcode: OP, funct3: 0b111, funct7: 0b0000001 }

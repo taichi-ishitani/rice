@@ -28,6 +28,9 @@ module rice_core_ex_stage
   logic               mul_valid;
   logic               mul_done;
   logic [XLEN-1:0]    mul_data;
+  logic               div_valid;
+  logic               div_done;
+  logic [XLEN-1:0]    div_data;
   logic               memory_access_valid;
   logic [1:0]         memory_access_done;
   logic [XLEN-1:0]    memory_access_data;
@@ -35,7 +38,7 @@ module rice_core_ex_stage
   logic               csr_access_done;
   logic [XLEN-1:0]    csr_access_data;
   logic               csr_access_error;
-  logic [2:0]         stall;
+  logic [3:0]         stall;
   rice_core_exception exception;
   logic               ex_result_valid;
   rice_core_ex_result ex_result;
@@ -175,7 +178,7 @@ module rice_core_ex_stage
 //--------------------------------------------------------------
   always_comb begin
     mul_valid =
-      id_result.valid && id_result.mul_operation.valid;
+      id_result.valid && (id_result.mul_operation != '0);
   end
 
   rice_core_mul #(
@@ -189,6 +192,27 @@ module rice_core_ex_stage
     .i_mul_operation  (id_result.mul_operation  ),
     .o_result_valid   (mul_done                 ),
     .o_result         (mul_data                 )
+  );
+
+//--------------------------------------------------------------
+//  Divisor
+//--------------------------------------------------------------
+  always_comb begin
+    div_valid =
+      id_result.valid && (id_result.div_operation != '0);
+  end
+
+  rice_core_div #(
+    .XLEN (XLEN )
+  ) u_div (
+    .i_clk            (i_clk                    ),
+    .i_rst_n          (i_rst_n                  ),
+    .i_valid          (div_valid                ),
+    .i_rs1_value      (rs1_value                ),
+    .i_rs2_value      (rs2_value                ),
+    .i_div_operation  (id_result.div_operation  ),
+    .o_result_valid   (div_done                 ),
+    .o_result         (div_data                 )
   );
 
 //--------------------------------------------------------------
@@ -248,13 +272,14 @@ module rice_core_ex_stage
 //  Stall control
 //--------------------------------------------------------------
   always_comb begin
-    pipeline_if.stall = stall[0] || stall[1] || stall[2];
+    pipeline_if.stall = stall != '0;
   end
 
   always_comb begin
     stall[0]  = mul_valid && (!mul_done);
-    stall[1]  = memory_access_valid && (memory_access_done == '0);
-    stall[2]  = csr_access_valid && (!csr_access_done);
+    stall[1]  = div_valid && (!div_done);
+    stall[2]  = memory_access_valid && (memory_access_done == '0);
+    stall[3]  = csr_access_valid && (!csr_access_done);
   end
 
 //--------------------------------------------------------------
@@ -301,8 +326,8 @@ module rice_core_ex_stage
 
   always_comb begin
     ex_result_valid  =
-      (id_result.valid && (!mul_valid) && (!memory_access_valid) && (!csr_access_valid)) ||
-      mul_done || (memory_access_done != '0) || csr_access_done;
+      (id_result.valid && (!mul_valid) && (!div_valid) && (!memory_access_valid) && (!csr_access_valid)) ||
+      mul_done || div_done || (memory_access_done != '0) || csr_access_done;
   end
 
   always_ff @(posedge i_clk, negedge i_rst_n) begin
@@ -319,6 +344,8 @@ module rice_core_ex_stage
         case (1'b1)
           mul_done:
             ex_result.rd_value  <= mul_data;
+          div_done:
+            ex_result.rd_value  <= div_data;
           memory_access_done[1]:
             ex_result.rd_value  <= memory_access_data;
           csr_access_done:

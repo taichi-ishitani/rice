@@ -208,4 +208,20 @@ package rice_riscv_inst_matcher_pkg;
   function automatic logic match_mulhu(rice_riscv_inst inst_bits);
     return inst_bits ==? {25'b0000001xxxxxxxxxx011xxxxx, RICE_RISCV_OPCODE_OP};
   endfunction
+
+  function automatic logic match_div(rice_riscv_inst inst_bits);
+    return inst_bits ==? {25'b0000001xxxxxxxxxx100xxxxx, RICE_RISCV_OPCODE_OP};
+  endfunction
+
+  function automatic logic match_divu(rice_riscv_inst inst_bits);
+    return inst_bits ==? {25'b0000001xxxxxxxxxx101xxxxx, RICE_RISCV_OPCODE_OP};
+  endfunction
+
+  function automatic logic match_rem(rice_riscv_inst inst_bits);
+    return inst_bits ==? {25'b0000001xxxxxxxxxx110xxxxx, RICE_RISCV_OPCODE_OP};
+  endfunction
+
+  function automatic logic match_remu(rice_riscv_inst inst_bits);
+    return inst_bits ==? {25'b0000001xxxxxxxxxx111xxxxx, RICE_RISCV_OPCODE_OP};
+  endfunction
 endpackage

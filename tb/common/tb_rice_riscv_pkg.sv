@@ -79,7 +79,11 @@ package tb_rice_riscv_pkg;
     TB_RICE_RISCV_INTS_MUL,
     TB_RICE_RISCV_INTS_MULH,
     TB_RICE_RISCV_INTS_MULHSU,
-    TB_RICE_RISCV_INTS_MULHU
+    TB_RICE_RISCV_INTS_MULHU,
+    TB_RICE_RISCV_INTS_DIV,
+    TB_RICE_RISCV_INTS_DIVU,
+    TB_RICE_RISCV_INTS_REM,
+    TB_RICE_RISCV_INTS_REMU
   } tb_rice_riscv_inst;
 
   `include  "tb_rice_riscv_inst_item.svh"
