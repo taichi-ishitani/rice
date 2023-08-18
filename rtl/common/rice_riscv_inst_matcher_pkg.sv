@@ -192,4 +192,20 @@ package rice_riscv_inst_matcher_pkg;
   function automatic logic match_csrrci(rice_riscv_inst inst_bits);
     return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx111xxxxx, RICE_RISCV_OPCODE_SYSTEM};
   endfunction
+
+  function automatic logic match_mul(rice_riscv_inst inst_bits);
+    return inst_bits ==? {25'b0000001xxxxxxxxxx000xxxxx, RICE_RISCV_OPCODE_OP};
+  endfunction
+
+  function automatic logic match_mulh(rice_riscv_inst inst_bits);
+    return inst_bits ==? {25'b0000001xxxxxxxxxx001xxxxx, RICE_RISCV_OPCODE_OP};
+  endfunction
+
+  function automatic logic match_mulhsu(rice_riscv_inst inst_bits);
+    return inst_bits ==? {25'b0000001xxxxxxxxxx010xxxxx, RICE_RISCV_OPCODE_OP};
+  endfunction
+
+  function automatic logic match_mulhu(rice_riscv_inst inst_bits);
+    return inst_bits ==? {25'b0000001xxxxxxxxxx011xxxxx, RICE_RISCV_OPCODE_OP};
+  endfunction
 endpackage

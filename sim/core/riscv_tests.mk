@@ -45,3 +45,7 @@ RISCV_TESTS += riscv-tests_isa_rv32ui-p-srli
 RISCV_TESTS += riscv-tests_isa_rv32ui-p-sub
 RISCV_TESTS += riscv-tests_isa_rv32ui-p-xor
 RISCV_TESTS += riscv-tests_isa_rv32ui-p-xori
+RISCV_TESTS += riscv-tests_isa_rv32um-p-mul
+RISCV_TESTS += riscv-tests_isa_rv32um-p-mulh
+RISCV_TESTS += riscv-tests_isa_rv32um-p-mulhsu
+RISCV_TESTS += riscv-tests_isa_rv32um-p-mulhu

@@ -94,3 +94,11 @@ csrrsi:
   { type: i, opcode: SYSTEM, funct3: 0b110 }
 csrrci:
   { type: i, opcode: SYSTEM, funct3: 0b111 }
+mul:
+  { type: r, opcode: OP, funct3: 0b000, funct7: 0b0000001 }
+mulh:
+  { type: r, opcode: OP, funct3: 0b001, funct7: 0b0000001 }
+mulhsu:
+  { type: r, opcode: OP, funct3: 0b010, funct7: 0b0000001 }
+mulhu:
+  { type: r, opcode: OP, funct3: 0b011, funct7: 0b0000001 }

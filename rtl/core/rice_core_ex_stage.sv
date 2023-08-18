@@ -22,9 +22,12 @@ module rice_core_ex_stage
   rice_core_value     rs1_value;
   rice_core_value     rs2_value;
   rice_core_ex_result wb_result;
-  logic [XLEN-1:0]    alu_data;
   logic               flush;
   rice_core_pc        flush_pc;
+  logic [XLEN-1:0]    alu_data;
+  logic               mul_valid;
+  logic               mul_done;
+  logic [XLEN-1:0]    mul_data;
   logic               memory_access_valid;
   logic [1:0]         memory_access_done;
   logic [XLEN-1:0]    memory_access_data;
@@ -32,7 +35,7 @@ module rice_core_ex_stage
   logic               csr_access_done;
   logic [XLEN-1:0]    csr_access_data;
   logic               csr_access_error;
-  logic [1:0]         stall;
+  logic [2:0]         stall;
   rice_core_exception exception;
   logic               ex_result_valid;
   rice_core_ex_result ex_result;
@@ -85,20 +88,6 @@ module rice_core_ex_stage
       default:        return rs_value;
     endcase
   endfunction
-
-//--------------------------------------------------------------
-//  ALU
-//--------------------------------------------------------------
-  rice_core_alu #(
-    .XLEN (XLEN )
-  ) u_alu (
-    .i_pc             (pipeline_if.id_result.pc             ),
-    .i_rs1_value      (rs1_value                            ),
-    .i_rs2_value      (rs2_value                            ),
-    .i_imm_value      (pipeline_if.id_result.imm_value      ),
-    .i_alu_operation  (pipeline_if.id_result.alu_operation  ),
-    .o_result         (alu_data                             )
-  );
 
 //--------------------------------------------------------------
 //  PC control
@@ -168,6 +157,41 @@ module rice_core_ex_stage
   endfunction
 
 //--------------------------------------------------------------
+//  ALU
+//--------------------------------------------------------------
+  rice_core_alu #(
+    .XLEN (XLEN )
+  ) u_alu (
+    .i_pc             (pipeline_if.id_result.pc             ),
+    .i_rs1_value      (rs1_value                            ),
+    .i_rs2_value      (rs2_value                            ),
+    .i_imm_value      (pipeline_if.id_result.imm_value      ),
+    .i_alu_operation  (pipeline_if.id_result.alu_operation  ),
+    .o_result         (alu_data                             )
+  );
+
+//--------------------------------------------------------------
+//  Multiplier
+//--------------------------------------------------------------
+  always_comb begin
+    mul_valid =
+      id_result.valid && id_result.mul_operation.valid;
+  end
+
+  rice_core_mul #(
+    .XLEN (XLEN )
+  ) u_mul (
+    .i_clk            (i_clk                    ),
+    .i_rst_n          (i_rst_n                  ),
+    .i_valid          (mul_valid                ),
+    .i_rs1_value      (rs1_value                ),
+    .i_rs2_value      (rs2_value                ),
+    .i_mul_operation  (id_result.mul_operation  ),
+    .o_result_valid   (mul_done                 ),
+    .o_result         (mul_data                 )
+  );
+
+//--------------------------------------------------------------
 //  Load/Store unit
 //--------------------------------------------------------------
   always_comb begin
@@ -224,12 +248,13 @@ module rice_core_ex_stage
 //  Stall control
 //--------------------------------------------------------------
   always_comb begin
-    pipeline_if.stall = stall[0] || stall[1];
+    pipeline_if.stall = stall[0] || stall[1] || stall[2];
   end
 
   always_comb begin
-    stall[0]  = memory_access_valid && (memory_access_done == '0);
-    stall[1]  = csr_access_valid && (!csr_access_done);
+    stall[0]  = mul_valid && (!mul_done);
+    stall[1]  = memory_access_valid && (memory_access_done == '0);
+    stall[2]  = csr_access_valid && (!csr_access_done);
   end
 
 //--------------------------------------------------------------
@@ -276,8 +301,8 @@ module rice_core_ex_stage
 
   always_comb begin
     ex_result_valid  =
-      (id_result.valid && (!memory_access_valid) && (!csr_access_valid)) ||
-      (memory_access_done != '0) || csr_access_done;
+      (id_result.valid && (!mul_valid) && (!memory_access_valid) && (!csr_access_valid)) ||
+      mul_done || (memory_access_done != '0) || csr_access_done;
   end
 
   always_ff @(posedge i_clk, negedge i_rst_n) begin
@@ -292,6 +317,8 @@ module rice_core_ex_stage
       if (ex_result_valid) begin
         ex_result.rd  <= pipeline_if.id_result.rd;
         case (1'b1)
+          mul_done:
+            ex_result.rd_value  <= mul_data;
           memory_access_done[1]:
             ex_result.rd_value  <= memory_access_data;
           csr_access_done:

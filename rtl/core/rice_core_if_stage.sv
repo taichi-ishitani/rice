@@ -138,7 +138,7 @@ module rice_core_if_stage
 //--------------------------------------------------------------
   always_comb begin
     flush       = pipeline_if.flush || flush_busy;
-    flush_done  = get_flush_done(flush, request_ack, response_ack, count);
+    flush_done  = get_flush_done(flush, request_valid, request_ack, response_ack, count);
   end
 
   always_ff @(posedge i_clk, negedge i_rst_n) begin
@@ -167,6 +167,7 @@ module rice_core_if_stage
 
   function automatic logic get_flush_done(
     logic                   flush,
+    logic                   request_valid,
     logic                   request_ack,
     logic                   response_ack,
     logic [COUNT_WIDTH-1:0] count
@@ -174,6 +175,6 @@ module rice_core_if_stage
     logic [1:0] done;
     done[0] = (!request_ack) && response_ack && (count == COUNT_WIDTH'(1));
     done[1] = count == COUNT_WIDTH'(0);
-    return flush && (done != '0);
+    return flush && (!request_valid) && (done != '0);
   endfunction
 endmodule

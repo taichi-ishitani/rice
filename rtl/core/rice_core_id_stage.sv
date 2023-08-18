@@ -45,6 +45,7 @@ module rice_core_id_stage
         id_result.rs2_value         <= get_rs2_value(if_result.inst, pipeline_if.register_file);
         id_result.imm_value         <= get_imm_value(if_result.inst);
         id_result.alu_operation     <= decode_alu_operation(if_result.inst);
+        id_result.mul_operation     <= decode_mul_operation(if_result.inst);
         id_result.jamp_operation    <= decode_jamp_operation(if_result.inst);
         id_result.branch_operation  <= decode_branch_operation(if_result.inst);
         id_result.memory_access     <= decode_memory_access(if_result.inst);
@@ -215,6 +216,22 @@ module rice_core_id_stage
       default:
         return get_alu_operation(RICE_CORE_ALU_NONE, RICE_CORE_ALU_SOURCE_IMM_0, RICE_CORE_ALU_SOURCE_IMM_0);
     endcase
+  endfunction
+
+  function automatic rice_core_mul_operation decode_mul_operation(rice_riscv_inst inst_bits);
+    rice_core_mul_operation mul_operation;
+    logic [3:0]             mul;
+
+    mul[0]                    = match_mul(inst_bits);
+    mul[1]                    = match_mulh(inst_bits);
+    mul[2]                    = match_mulhsu(inst_bits);
+    mul[3]                    = match_mulhu(inst_bits);
+    mul_operation.valid       = mul != '0;
+    mul_operation.rd_high     = !mul[0];
+    mul_operation.rs1_signed  = mul[1] || mul[2];
+    mul_operation.rs2_signed  = mul[1];
+
+    return mul_operation;
   endfunction
 
   function automatic rice_core_jamp_operation decode_jamp_operation(rice_riscv_inst inst_bits);
