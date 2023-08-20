@@ -46,12 +46,9 @@ package rice_core_pkg;
   typedef struct packed {
     logic jal;
     logic jalr;
+    logic beq_bge;
+    logic bne_blt;
   } rice_core_jamp_operation;
-
-  typedef struct packed {
-    logic eq_ge;
-    logic ne_lt;
-  } rice_core_branch_operation;
 
   typedef enum logic [1:0] {
     RICE_CORE_MEMORY_ACCESS_NONE,

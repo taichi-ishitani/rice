@@ -48,7 +48,6 @@ module rice_core_id_stage
         id_result.mul_operation     <= decode_mul_operation(if_result.inst);
         id_result.div_operation     <= decode_div_operation(if_result.inst);
         id_result.jamp_operation    <= decode_jamp_operation(if_result.inst);
-        id_result.branch_operation  <= decode_branch_operation(if_result.inst);
         id_result.memory_access     <= decode_memory_access(if_result.inst);
         id_result.ordering_control  <= decode_ordering_control(if_result.inst);
         id_result.trap_control      <= decode_trap_control(if_result.inst);
@@ -243,16 +242,11 @@ module rice_core_id_stage
 
   function automatic rice_core_jamp_operation decode_jamp_operation(rice_riscv_inst inst_bits);
     rice_core_jamp_operation  jamp_operation;
-    jamp_operation.jal  = match_jal(inst_bits);
-    jamp_operation.jalr = match_jalr(inst_bits);
+    jamp_operation.jal      = match_jal(inst_bits);
+    jamp_operation.jalr     = match_jalr(inst_bits);
+    jamp_operation.beq_bge  = match_beq(inst_bits) || match_bge(inst_bits) || match_bgeu(inst_bits);
+    jamp_operation.bne_blt  = match_bne(inst_bits) || match_blt(inst_bits) || match_bltu(inst_bits);
     return jamp_operation;
-  endfunction
-
-  function automatic rice_core_branch_operation decode_branch_operation(rice_riscv_inst inst_bits);
-    rice_core_branch_operation  branch_operation;
-    branch_operation.eq_ge  = match_beq(inst_bits) || match_bge(inst_bits) || match_bgeu(inst_bits);
-    branch_operation.ne_lt  = match_bne(inst_bits) || match_blt(inst_bits) || match_bltu(inst_bits);
-    return branch_operation;
   endfunction
 
   function automatic rice_core_memory_access decode_memory_access(rice_riscv_inst inst_bits);

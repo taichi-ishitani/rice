@@ -71,7 +71,6 @@ module tb_rice_core_env_pipeline_monitor_if_wrapper
     monitor_if.id_result.imm_value        = pipeline_if.id_result.imm_value;
     monitor_if.id_result.alu_operation    = pipeline_if.id_result.alu_operation;
     monitor_if.id_result.jamp_operation   = pipeline_if.id_result.jamp_operation;
-    monitor_if.id_result.branch_operation = pipeline_if.id_result.branch_operation;
     monitor_if.id_result.memory_access    = pipeline_if.id_result.memory_access;
     monitor_if.id_result.csr_access       = pipeline_if.id_result.csr_access;
     monitor_if.id_result.trap_control     = pipeline_if.id_result.trap_control;

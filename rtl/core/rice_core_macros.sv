@@ -20,7 +20,6 @@ typedef struct packed { \
   rice_core_mul_operation     mul_operation; \
   rice_core_div_operation     div_operation; \
   rice_core_jamp_operation    jamp_operation; \
-  rice_core_branch_operation  branch_operation; \
   rice_core_memory_access     memory_access; \
   rice_core_ordering_control  ordering_control; \
   rice_core_trap_control      trap_control; \

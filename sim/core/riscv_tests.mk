@@ -1,6 +1,7 @@
 RISCV_TESTS += riscv-tests_isa_rv32mi-p-csr
 RISCV_TESTS += riscv-tests_isa_rv32mi-p-mcsr
 RISCV_TESTS += riscv-tests_isa_rv32mi-p-ma_addr
+RISCV_TESTS += riscv-tests_isa_rv32mi-p-ma_fetch
 RISCV_TESTS += riscv-tests_isa_rv32mi-p-lw-misaligned
 RISCV_TESTS += riscv-tests_isa_rv32mi-p-lh-misaligned
 RISCV_TESTS += riscv-tests_isa_rv32mi-p-sh-misaligned
