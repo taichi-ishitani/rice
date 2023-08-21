@@ -322,10 +322,11 @@ module rice_core_ex_stage
 //  Env control
 //--------------------------------------------------------------
   always_comb begin
-    env_if.exception  = exception;
-    env_if.mret       = id_result.valid && id_result.trap_control.mret;
-    env_if.pc         = id_result.pc;
-    env_if.inst       = id_result.inst;
+    env_if.inst_retired = ex_result_valid && (!stall) && (ex_error == '0);
+    env_if.exception    = exception;
+    env_if.mret         = id_result.valid && id_result.trap_control.mret;
+    env_if.pc           = id_result.pc;
+    env_if.inst         = id_result.inst;
   end
 
   always_comb begin
@@ -377,7 +378,7 @@ module rice_core_ex_stage
     else if (!stall) begin
       ex_result.valid <= ex_result_valid;
       if (ex_result_valid) begin
-        if (exception == '0) begin
+        if (ex_error == '0) begin
           ex_result.rd  <= pipeline_if.id_result.rd;
         end
         else begin

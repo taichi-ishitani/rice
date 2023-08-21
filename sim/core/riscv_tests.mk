@@ -6,6 +6,7 @@ RISCV_TESTS += riscv-tests_isa_rv32mi-p-lw-misaligned
 RISCV_TESTS += riscv-tests_isa_rv32mi-p-lh-misaligned
 RISCV_TESTS += riscv-tests_isa_rv32mi-p-sh-misaligned
 RISCV_TESTS += riscv-tests_isa_rv32mi-p-sw-misaligned
+RISCV_TESTS += riscv-tests_isa_rv32mi-p-zicntr
 RISCV_TESTS += riscv-tests_isa_rv32ui-p-add
 RISCV_TESTS += riscv-tests_isa_rv32ui-p-addi
 RISCV_TESTS += riscv-tests_isa_rv32ui-p-and

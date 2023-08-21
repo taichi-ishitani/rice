@@ -1,9 +1,10 @@
 PATH_CSR          := $(RICE_ROOT)/csr
 CSR_CONFIGURATION := $(wildcard $(PATH_CSR)/*.yaml)
-CSR_DEFINITIONS   := $(wildcard $(PATH_CSR)/*.rb)
+CSR_DEFINITIONS   := $(wildcard $(PATH_CSR)/rice_csr_*_level.rb)
 CSR_RTL           := $(addsuffix .sv, $(basename $(notdir $(CSR_DEFINITIONS))))
 
-RGGEN := rggen --print-backtrace --plugin $(PATH_SCRIPT)/rb/rggen-rice/lib/rggen/rice.rb
+PATH_PLUGIN := $(PATH_SCRIPT)/rb/rggen-rice/lib/rggen/rice.rb
+RGGEN       := RGGEN_PLUGINS=$(PATH_PLUGIN) rggen --print-backtrace
 
 .PHONY: generate_rtl
 

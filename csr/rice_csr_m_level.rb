@@ -1,15 +1,10 @@
 # frozen_string_literal: true
 
-XLEN = ENV['XLEN'].to_i
-WORD_SIZE = XLEN / 8
-
-def byte_address(word_address)
-  word_address * WORD_SIZE
-end
+require_relative 'rice_csr_common'
 
 register_block {
   name "rice_csr_m_level_xlen#{XLEN}"
-  byte_size 4096 * WORD_SIZE
+  byte_size BYTE_SIZE
 
   #
   # Machine Information Registers
@@ -272,6 +267,63 @@ register_block {
     bit_field {
       name 'meip'
       bit_assignment lsb: 11, width: 1; type :rof; initial_value 0
+    }
+  }
+
+  #
+  # Machine Counter/Timers
+  #
+  register {
+    name 'mcycle'
+    offset_address byte_address(0xB00)
+    bit_field {
+      bit_assignment lsb: 0, width: XLEN; type :counter; initial_value 0
+      reference 'mcountinhibit.cy'
+    }
+  }
+
+  register {
+    name 'minstret'
+    offset_address byte_address(0xB02)
+    bit_field {
+      bit_assignment lsb: 0, width: XLEN; type :counter; initial_value 0
+      reference 'mcountinhibit.ir'
+    }
+  }
+
+  if XLEN == 32
+    register {
+      name 'mcycleh'
+      offset_address byte_address(0xB80)
+      bit_field {
+        bit_assignment lsb: 0, width: XLEN; type :counter; initial_value 0
+        reference 'mcountinhibit.cy'
+      }
+    }
+
+    register {
+      name 'minstreth'
+      offset_address byte_address(0xB82)
+      bit_field {
+        bit_assignment lsb: 0, width: XLEN; type :counter; initial_value 0
+        reference 'mcountinhibit.ir'
+      }
+    }
+  end
+
+  #
+  # Machine Counter Setup
+  #
+  register {
+    name 'mcountinhibit'
+    offset_address byte_address(0x320)
+    bit_field {
+      name 'cy'
+      bit_assignment lsb: 0, width: 1; type :rw; initial_value 0
+    }
+    bit_field {
+      name 'ir'
+      bit_assignment lsb: 2, width: 1; type :rw; initial_value 0
     }
   }
 }

@@ -31,8 +31,12 @@ module rice_core_env
   logic                             mcause_set;
   logic                             mcause_interrutpt;
   logic [EXCEPTION_CODE_WIDTH-1:0]  mcause_code;
-  logic                             csr_select;
-  rice_bus_if #(12, XLEN)           csr_demux_if[2]();
+  logic [1:0]                       mcycle_up;
+  logic [2*XLEN-1:0]                mcycle;
+  logic [1:0]                       minstret_up;
+  logic [2*XLEN-1:0]                minstret;
+  logic [1:0]                       csr_select;
+  rice_bus_if #(12, XLEN)           csr_demux_if[3]();
 
 //--------------------------------------------------------------
 //  Privilege level
@@ -106,18 +110,35 @@ module rice_core_env
   endfunction
 
 //--------------------------------------------------------------
+//  Machine counter
+//--------------------------------------------------------------
+  always_comb begin
+    mcycle_up[0]  = i_enable;
+    mcycle_up[1]  = mcycle_up[0] && (mcycle[0*XLEN+:XLEN] == '1);
+  end
+
+  always_comb begin
+    minstret_up[0]  = i_enable && env_if.inst_retired;
+    minstret_up[1]  = minstret_up[0] && (minstret[0*XLEN+:XLEN] == '1);
+  end
+
+//--------------------------------------------------------------
 //  CSR
 //--------------------------------------------------------------
   always_comb begin
     case (csr_if.address) inside
+      [12'h000:12'h0FF],  //  User level standard rw
+      [12'h400:12'h4FF],  //  User level standard rw
+      [12'hC00:12'hCBF]:  //  User level standard read only
+        csr_select  = 2'd0;
       [12'h300:12'h3FF],  //  Machine lavel standard rw
       [12'h700:12'h79F],  //  Machine lavel standard rw
       [12'h7A0:12'h7AF],  //  Machine lavel standard rw debug
       [12'hB00:12'hBBF],  //  Machine lavel standard rw
       [12'hF00:12'hFBF]:  //  Machine lavel standard read only
-        csr_select  = 1'd1;
+        csr_select  = 2'd1;
       default:
-        csr_select  = 1'd0;
+        csr_select  = 2'd2;
     endcase
   end
 
@@ -125,13 +146,72 @@ module rice_core_env
     .ADDRESS_WIDTH    (12   ),
     .DATA_WIDTH       (XLEN ),
     .NON_POSTED_WRITE (1    ),
-    .MASTERS          (2    )
+    .MASTERS          (3    )
   ) u_csrbus_demux (
     .i_clk      (i_clk        ),
     .i_rst_n    (i_rst_n      ),
     .i_select   (csr_select   ),
     .slave_if   (csr_if       ),
     .master_if  (csr_demux_if )
+  );
+
+  rice_csr_u_level_xlen32 #(
+    .ERROR_STATUS   (1  ),
+    .INSERT_SLICER  (1  )
+  ) u_csr_u_level (
+    .i_clk      (i_clk                  ),
+    .i_rst_n    (i_rst_n                ),
+    .csr_if     (csr_demux_if[0]        ),
+    .i_cycle    (mcycle[0*XLEN+:XLEN]   ),
+    .i_instret  (minstret[0*XLEN+:XLEN] ),
+    .i_cycleh   (mcycle[1*XLEN+:XLEN]   ),
+    .i_instreth (minstret[1*XLEN+:XLEN] )
+  );
+
+  rice_csr_m_level_xlen32 #(
+    .ERROR_STATUS   (1  ),
+    .INSERT_SLICER  (1  )
+  ) u_csr_m_level (
+    .i_clk                        (i_clk                  ),
+    .i_rst_n                      (i_rst_n                ),
+    .csr_if                       (csr_demux_if[1]        ),
+    .i_mhartid                    ('0                     ),
+    .i_mstatus_mie_set            (mie_set                ),
+    .i_mstatus_mie                (mie[1]                 ),
+    .o_mstatus_mie                (mie[0]                 ),
+    .i_mstatus_mpie_set           (mpie_set               ),
+    .i_mstatus_mpie               (mpie[1]                ),
+    .o_mstatus_mpie               (mpie[0]                ),
+    .i_mstatus_mpp_set            (mpp_set                ),
+    .i_mstatus_mpp                (mpp[1]                 ),
+    .o_mstatus_mpp                (mpp[0]                 ),
+    .o_misa_support_i             (),
+    .o_misa_support_m             (),
+    .o_mtvec_mode                 (),
+    .o_mtvec_base                 (mtvec_base             ),
+    .o_mscratch                   (),
+    .i_mepc_set                   (mepc_set               ),
+    .i_mepc                       (mepc[1]                ),
+    .o_mepc                       (mepc[0]                ),
+    .i_mcause_exception_code_set  (mcause_set             ),
+    .i_mcause_exception_code      (mcause_code            ),
+    .o_mcause_exception_code      (),
+    .i_mcause_interrupt_set       (mcause_set             ),
+    .i_mcause_interrupt           (mcause_interrutpt      ),
+    .o_mcause_interrupt           (),
+    .i_mtval_set                  ('0                     ),
+    .i_mtval                      ('0                     ),
+    .o_mtval                      (),
+    .i_mcycle_up                  (mcycle_up[0]           ),
+    .o_mcycle_count               (mcycle[0*XLEN+:XLEN]   ),
+    .i_minstret_up                (minstret_up[0]         ),
+    .o_minstret_count             (minstret[0*XLEN+:XLEN] ),
+    .i_mcycleh_up                 (mcycle_up[1]           ),
+    .o_mcycleh_count              (mcycle[1*XLEN+:XLEN]   ),
+    .i_minstreth_up               (minstret_up[1]         ),
+    .o_minstreth_count            (minstret[1*XLEN+:XLEN] ),
+    .o_mcountinhibit_cy           (),
+    .o_mcountinhibit_ir           ()
   );
 
   rice_bus_slave_dummy #(
@@ -141,42 +221,6 @@ module rice_core_env
   ) u_csrbus_slave_dummy (
     .i_clk    (i_clk            ),
     .i_rst_n  (i_rst_n          ),
-    .slave_if (csr_demux_if[0]  )
-  );
-
-  rice_csr_m_level_xlen32 #(
-    .ERROR_STATUS   (1  ),
-    .INSERT_SLICER  (1  )
-  ) u_csr_m_level (
-    .i_clk                        (i_clk              ),
-    .i_rst_n                      (i_rst_n            ),
-    .csr_if                       (csr_demux_if[1]    ),
-    .i_mhartid                    ('0                 ),
-    .i_mstatus_mie_set            (mie_set            ),
-    .i_mstatus_mie                (mie[1]             ),
-    .o_mstatus_mie                (mie[0]             ),
-    .i_mstatus_mpie_set           (mpie_set           ),
-    .i_mstatus_mpie               (mpie[1]            ),
-    .o_mstatus_mpie               (mpie[0]            ),
-    .i_mstatus_mpp_set            (mpp_set            ),
-    .i_mstatus_mpp                (mpp[1]             ),
-    .o_mstatus_mpp                (mpp[0]             ),
-    .o_misa_support_i             (),
-    .o_misa_support_m             (),
-    .o_mtvec_mode                 (),
-    .o_mtvec_base                 (mtvec_base         ),
-    .o_mscratch                   (),
-    .i_mepc_set                   (mepc_set           ),
-    .i_mepc                       (mepc[1]            ),
-    .o_mepc                       (mepc[0]            ),
-    .i_mcause_exception_code_set  (mcause_set         ),
-    .i_mcause_exception_code      (mcause_code        ),
-    .o_mcause_exception_code      (),
-    .i_mcause_interrupt_set       (mcause_set         ),
-    .i_mcause_interrupt           (mcause_interrutpt  ),
-    .o_mcause_interrupt           (),
-    .i_mtval_set                  ('0                 ),
-    .i_mtval                      ('0                 ),
-    .o_mtval                      ()
+    .slave_if (csr_demux_if[2]  )
   );
 endmodule

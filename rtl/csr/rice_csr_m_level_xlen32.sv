@@ -60,14 +60,24 @@ module rice_csr_m_level_xlen32
   output logic o_mcause_interrupt,
   input logic i_mtval_set,
   input logic [31:0] i_mtval,
-  output logic [31:0] o_mtval
+  output logic [31:0] o_mtval,
+  input logic i_mcycle_up,
+  output logic [31:0] o_mcycle_count,
+  input logic i_minstret_up,
+  output logic [31:0] o_minstret_count,
+  input logic i_mcycleh_up,
+  output logic [31:0] o_mcycleh_count,
+  input logic i_minstreth_up,
+  output logic [31:0] o_minstreth_count,
+  output logic o_mcountinhibit_cy,
+  output logic o_mcountinhibit_ir
 );
-  rggen_register_if #(14, 32, 32) register_if[14]();
+  rggen_register_if #(14, 32, 32) register_if[19]();
   rggen_rice_bus_if_adapter #(
     .ADDRESS_WIDTH        (ADDRESS_WIDTH),
     .LOCAL_ADDRESS_WIDTH  (14),
     .BUS_WIDTH            (32),
-    .REGISTERS            (14),
+    .REGISTERS            (19),
     .PRE_DECODE           (PRE_DECODE),
     .BASE_ADDRESS         (BASE_ADDRESS),
     .BYTE_SIZE            (16384),
@@ -1474,6 +1484,212 @@ module rice_csr_m_level_xlen32
         .i_value            (INITIAL_VALUE),
         .i_mask             ('1),
         .o_value            (),
+        .o_value_unmasked   ()
+      );
+    end
+  end endgenerate
+  generate if (1) begin : g_mcycle
+    rggen_bit_field_if #(32) bit_field_if();
+    `rggen_tie_off_unused_signals(32, 32'hffffffff, bit_field_if)
+    rggen_default_register #(
+      .READABLE       (1),
+      .WRITABLE       (1),
+      .ADDRESS_WIDTH  (14),
+      .OFFSET_ADDRESS (14'h2c00),
+      .BUS_WIDTH      (32),
+      .DATA_WIDTH     (32),
+      .VALUE_WIDTH    (32)
+    ) u_register (
+      .i_clk        (i_clk),
+      .i_rst_n      (i_rst_n),
+      .register_if  (register_if[14]),
+      .bit_field_if (bit_field_if)
+    );
+    if (1) begin : g_mcycle
+      localparam bit [31:0] INITIAL_VALUE = 32'h00000000;
+      rggen_bit_field_if #(32) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 32)
+      rggen_rice_bit_field_counter #(
+        .WIDTH          (32),
+        .INITIAL_VALUE  (INITIAL_VALUE)
+      ) u_bit_field (
+        .i_clk        (i_clk),
+        .i_rst_n      (i_rst_n),
+        .bit_field_if (bit_field_sub_if),
+        .i_disable    (register_if[18].value[0+:1]),
+        .i_up         (i_mcycle_up),
+        .o_count      (o_mcycle_count)
+      );
+    end
+  end endgenerate
+  generate if (1) begin : g_minstret
+    rggen_bit_field_if #(32) bit_field_if();
+    `rggen_tie_off_unused_signals(32, 32'hffffffff, bit_field_if)
+    rggen_default_register #(
+      .READABLE       (1),
+      .WRITABLE       (1),
+      .ADDRESS_WIDTH  (14),
+      .OFFSET_ADDRESS (14'h2c08),
+      .BUS_WIDTH      (32),
+      .DATA_WIDTH     (32),
+      .VALUE_WIDTH    (32)
+    ) u_register (
+      .i_clk        (i_clk),
+      .i_rst_n      (i_rst_n),
+      .register_if  (register_if[15]),
+      .bit_field_if (bit_field_if)
+    );
+    if (1) begin : g_minstret
+      localparam bit [31:0] INITIAL_VALUE = 32'h00000000;
+      rggen_bit_field_if #(32) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 32)
+      rggen_rice_bit_field_counter #(
+        .WIDTH          (32),
+        .INITIAL_VALUE  (INITIAL_VALUE)
+      ) u_bit_field (
+        .i_clk        (i_clk),
+        .i_rst_n      (i_rst_n),
+        .bit_field_if (bit_field_sub_if),
+        .i_disable    (register_if[18].value[2+:1]),
+        .i_up         (i_minstret_up),
+        .o_count      (o_minstret_count)
+      );
+    end
+  end endgenerate
+  generate if (1) begin : g_mcycleh
+    rggen_bit_field_if #(32) bit_field_if();
+    `rggen_tie_off_unused_signals(32, 32'hffffffff, bit_field_if)
+    rggen_default_register #(
+      .READABLE       (1),
+      .WRITABLE       (1),
+      .ADDRESS_WIDTH  (14),
+      .OFFSET_ADDRESS (14'h2e00),
+      .BUS_WIDTH      (32),
+      .DATA_WIDTH     (32),
+      .VALUE_WIDTH    (32)
+    ) u_register (
+      .i_clk        (i_clk),
+      .i_rst_n      (i_rst_n),
+      .register_if  (register_if[16]),
+      .bit_field_if (bit_field_if)
+    );
+    if (1) begin : g_mcycleh
+      localparam bit [31:0] INITIAL_VALUE = 32'h00000000;
+      rggen_bit_field_if #(32) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 32)
+      rggen_rice_bit_field_counter #(
+        .WIDTH          (32),
+        .INITIAL_VALUE  (INITIAL_VALUE)
+      ) u_bit_field (
+        .i_clk        (i_clk),
+        .i_rst_n      (i_rst_n),
+        .bit_field_if (bit_field_sub_if),
+        .i_disable    (register_if[18].value[0+:1]),
+        .i_up         (i_mcycleh_up),
+        .o_count      (o_mcycleh_count)
+      );
+    end
+  end endgenerate
+  generate if (1) begin : g_minstreth
+    rggen_bit_field_if #(32) bit_field_if();
+    `rggen_tie_off_unused_signals(32, 32'hffffffff, bit_field_if)
+    rggen_default_register #(
+      .READABLE       (1),
+      .WRITABLE       (1),
+      .ADDRESS_WIDTH  (14),
+      .OFFSET_ADDRESS (14'h2e08),
+      .BUS_WIDTH      (32),
+      .DATA_WIDTH     (32),
+      .VALUE_WIDTH    (32)
+    ) u_register (
+      .i_clk        (i_clk),
+      .i_rst_n      (i_rst_n),
+      .register_if  (register_if[17]),
+      .bit_field_if (bit_field_if)
+    );
+    if (1) begin : g_minstreth
+      localparam bit [31:0] INITIAL_VALUE = 32'h00000000;
+      rggen_bit_field_if #(32) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 32)
+      rggen_rice_bit_field_counter #(
+        .WIDTH          (32),
+        .INITIAL_VALUE  (INITIAL_VALUE)
+      ) u_bit_field (
+        .i_clk        (i_clk),
+        .i_rst_n      (i_rst_n),
+        .bit_field_if (bit_field_sub_if),
+        .i_disable    (register_if[18].value[2+:1]),
+        .i_up         (i_minstreth_up),
+        .o_count      (o_minstreth_count)
+      );
+    end
+  end endgenerate
+  generate if (1) begin : g_mcountinhibit
+    rggen_bit_field_if #(32) bit_field_if();
+    `rggen_tie_off_unused_signals(32, 32'h00000005, bit_field_if)
+    rggen_default_register #(
+      .READABLE       (1),
+      .WRITABLE       (1),
+      .ADDRESS_WIDTH  (14),
+      .OFFSET_ADDRESS (14'h0c80),
+      .BUS_WIDTH      (32),
+      .DATA_WIDTH     (32),
+      .VALUE_WIDTH    (32)
+    ) u_register (
+      .i_clk        (i_clk),
+      .i_rst_n      (i_rst_n),
+      .register_if  (register_if[18]),
+      .bit_field_if (bit_field_if)
+    );
+    if (1) begin : g_cy
+      localparam bit INITIAL_VALUE = 1'h0;
+      rggen_bit_field_if #(1) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 1)
+      rggen_bit_field #(
+        .WIDTH          (1),
+        .INITIAL_VALUE  (INITIAL_VALUE),
+        .SW_WRITE_ONCE  (0),
+        .TRIGGER        (0)
+      ) u_bit_field (
+        .i_clk              (i_clk),
+        .i_rst_n            (i_rst_n),
+        .bit_field_if       (bit_field_sub_if),
+        .o_write_trigger    (),
+        .o_read_trigger     (),
+        .i_sw_write_enable  ('1),
+        .i_hw_write_enable  ('0),
+        .i_hw_write_data    ('0),
+        .i_hw_set           ('0),
+        .i_hw_clear         ('0),
+        .i_value            ('0),
+        .i_mask             ('1),
+        .o_value            (o_mcountinhibit_cy),
+        .o_value_unmasked   ()
+      );
+    end
+    if (1) begin : g_ir
+      localparam bit INITIAL_VALUE = 1'h0;
+      rggen_bit_field_if #(1) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 2, 1)
+      rggen_bit_field #(
+        .WIDTH          (1),
+        .INITIAL_VALUE  (INITIAL_VALUE),
+        .SW_WRITE_ONCE  (0),
+        .TRIGGER        (0)
+      ) u_bit_field (
+        .i_clk              (i_clk),
+        .i_rst_n            (i_rst_n),
+        .bit_field_if       (bit_field_sub_if),
+        .o_write_trigger    (),
+        .o_read_trigger     (),
+        .i_sw_write_enable  ('1),
+        .i_hw_write_enable  ('0),
+        .i_hw_write_data    ('0),
+        .i_hw_set           ('0),
+        .i_hw_clear         ('0),
+        .i_value            ('0),
+        .i_mask             ('1),
+        .o_value            (o_mcountinhibit_ir),
         .o_value_unmasked   ()
       );
     end

@@ -9,6 +9,7 @@ interface rice_core_env_if
   rice_core_privilege_level privilege_level;
   rice_core_pc              trap_pc;
   rice_core_pc              return_pc;
+  logic                     inst_retired;
   rice_core_exception       exception;
   logic                     mret;
   rice_core_pc              pc;
@@ -18,6 +19,7 @@ interface rice_core_env_if
     output  privilege_level,
     output  trap_pc,
     output  return_pc,
+    input   inst_retired,
     input   exception,
     input   mret,
     input   pc,
@@ -28,6 +30,7 @@ interface rice_core_env_if
     input   privilege_level,
     input   trap_pc,
     input   return_pc,
+    output  inst_retired,
     output  exception,
     output  mret,
     output  pc,
@@ -38,6 +41,7 @@ interface rice_core_env_if
     input privilege_level,
     input trap_pc,
     input return_pc,
+    input inst_retired,
     input exception,
     input mret,
     input pc,
