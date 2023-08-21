@@ -55,3 +55,4 @@ RISCV_TESTS += riscv-tests_isa_rv32um-p-div
 RISCV_TESTS += riscv-tests_isa_rv32um-p-divu
 RISCV_TESTS += riscv-tests_isa_rv32um-p-rem
 RISCV_TESTS += riscv-tests_isa_rv32um-p-remu
+RISCV_TESTS += riscv-tests_benchmarks_dhrystone

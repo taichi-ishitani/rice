@@ -18,6 +18,12 @@ class tb_rice_core_riscv_test extends tb_riscv_test_base #(
     memory.put(word_data, 4'hF, 4, address, 0);
   endfunction
 
+  protected function bit [31:0] get_word_data(
+    tb_rice_bus_address address
+  );
+    return memory.get(4, address, 0);
+  endfunction
+
   protected task get_data_bus_item(ref tb_rice_bus_item item);
     sequencer.data_bus_sequencer.get_item(item);
   endtask
