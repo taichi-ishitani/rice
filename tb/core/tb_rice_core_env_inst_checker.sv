@@ -23,5 +23,30 @@ module tb_rice_core_env_inst_checker
         (pipeline_if.id_result.ordering_control[1:0]     != '0                          )
     )
   else
-    `uvm_fatal("INVALID_INST", $sformatf("invalid instruction is given: %h", $past(pipeline_if.if_result.inst)))
+    `uvm_fatal(
+      "INVALID_INST",
+      $sformatf(
+        "invalid instruction is given: pc %h inst %h",
+        $past(pipeline_if.if_result.pc), $past(pipeline_if.if_result.inst)
+      )
+    )
+
+  function automatic bit is_check_disabled();
+    uvm_cmdline_processor clp;
+    string                args[$];
+
+    clp = uvm_cmdline_processor::get_inst();
+    if (clp.get_arg_matches("+disable_inst_check", args)) begin
+      return 1;
+    end
+    else begin
+      return 0;
+    end
+  endfunction
+
+  initial begin
+    if (is_check_disabled()) begin
+      $assertoff(0, ast_valid_instruction);
+    end
+  end
 endmodule

@@ -15,6 +15,18 @@ module rice_core_ex_stage
   `rice_core_define_types(XLEN)
 
   typedef struct packed {
+    logic alu;
+    logic mul;
+    logic div;
+    logic jamp;
+    logic memory;
+    logic ordering;
+    logic trap;
+    logic csr;
+  } rice_core_ex_type;
+
+  typedef struct packed {
+    logic illegal_instruction;
     logic misaligned_pc;
     logic csr_access;
   } rice_core_ex_error;
@@ -41,11 +53,45 @@ module rice_core_ex_stage
   logic                     csr_access_done;
   logic [XLEN-1:0]          csr_access_data;
   logic                     csr_access_error;
-  logic [3:0]               stall;
+  logic                     stall;
   rice_core_exception       exception;
+  rice_core_ex_type         ex_valid;
+  rice_core_ex_type         ex_done;
   logic                     ex_result_valid;
   rice_core_ex_result       ex_result;
   rice_core_ex_error        ex_error;
+
+  function automatic logic is_valid_alu_operation(rice_core_id_result id_result);
+    return id_result.alu_operation.command != RICE_CORE_ALU_NONE;
+  endfunction
+
+  function automatic logic is_valid_mul_operation(rice_core_id_result id_result);
+    return id_result.mul_operation != '0;
+  endfunction
+
+  function automatic logic is_valid_div_operation(rice_core_id_result id_result);
+    return id_result.div_operation != '0;
+  endfunction
+
+  function automatic logic is_valid_jamp_operation(rice_core_id_result id_result);
+    return id_result.jamp_operation != '0;
+  endfunction
+
+  function automatic logic is_valid_memory_access(rice_core_id_result id_result);
+    return id_result.memory_access.access_type != RICE_CORE_MEMORY_ACCESS_NONE;
+  endfunction
+
+  function automatic logic is_valid_odering_control(rice_core_id_result id_result);
+    return id_result.ordering_control.fence || id_result.ordering_control.fence_i;
+  endfunction
+
+  function automatic logic is_valid_trap_control(rice_core_id_result id_result);
+    return id_result.trap_control != '0;;
+  endfunction
+
+  function automatic logic is_valid_csr_access(rice_core_id_result id_result);
+    return id_result.csr_access != RICE_CORE_CSR_ACCESS_NONE;
+  endfunction
 
   always_comb begin
     id_result = pipeline_if.id_result;
@@ -109,8 +155,20 @@ module rice_core_ex_stage
   end
 
   always_comb begin
-    jamp_condition          = check_jamp_condition(id_result, alu_data);
-    jamp_pc                 = calc_jamp_pc(id_result, rs1_value);
+    jamp_condition  = check_jamp_condition(id_result, alu_data);
+    jamp_pc         = calc_jamp_pc(id_result, rs1_value);
+  end
+
+  always_comb begin
+    ex_valid.jamp     = is_valid_jamp_operation(id_result);
+    ex_valid.ordering = is_valid_odering_control(id_result);
+    ex_valid.trap     = is_valid_trap_control(id_result);
+    ex_done.jamp      = '1;
+    ex_done.ordering  = '1;
+    ex_done.trap      = '1;
+  end
+
+  always_comb begin
     ex_error.misaligned_pc  = check_misaligned_pc(jamp_condition, jamp_pc);
   end
 
@@ -198,6 +256,11 @@ module rice_core_ex_stage
 //--------------------------------------------------------------
 //  ALU
 //--------------------------------------------------------------
+  always_comb begin
+    ex_valid.alu  = is_valid_alu_operation(id_result);
+    ex_done.alu   = '1;
+  end
+
   rice_core_alu #(
     .XLEN (XLEN )
   ) u_alu (
@@ -213,8 +276,12 @@ module rice_core_ex_stage
 //  Multiplier
 //--------------------------------------------------------------
   always_comb begin
-    mul_valid =
-      id_result.valid && (id_result.mul_operation != '0);
+    ex_valid.mul  = is_valid_mul_operation(id_result);
+    ex_done.mul   = mul_done;
+  end
+
+  always_comb begin
+    mul_valid     = id_result.valid && ex_valid.mul;
   end
 
   rice_core_mul #(
@@ -234,8 +301,12 @@ module rice_core_ex_stage
 //  Divisor
 //--------------------------------------------------------------
   always_comb begin
-    div_valid =
-      id_result.valid && (id_result.div_operation != '0);
+    ex_valid.div  = is_valid_div_operation(id_result);
+    ex_done.div   = div_done;
+  end
+
+  always_comb begin
+    div_valid     = id_result.valid && ex_valid.div;
   end
 
   rice_core_div #(
@@ -255,9 +326,12 @@ module rice_core_ex_stage
 //  Load/Store unit
 //--------------------------------------------------------------
   always_comb begin
-    memory_access_valid =
-      id_result.valid &&
-      (id_result.memory_access.access_type != RICE_CORE_MEMORY_ACCESS_NONE);
+    ex_valid.memory = is_valid_memory_access(id_result);
+    ex_done.memory  = memory_access_done != '0;
+  end
+
+  always_comb begin
+    memory_access_valid = id_result.valid && ex_valid.memory;
   end
 
   rice_core_lsu #(
@@ -279,13 +353,16 @@ module rice_core_ex_stage
 //  CSR access
 //--------------------------------------------------------------
   always_comb begin
-    csr_access_valid  =
-      id_result.valid &&
-      (id_result.csr_access != RICE_CORE_CSR_ACCESS_NONE);
+    ex_valid.csr  = is_valid_csr_access(id_result);
+    ex_done.csr   = csr_access_done;
   end
 
   always_comb begin
     ex_error.csr_access = csr_access_done && csr_access_error;
+  end
+
+  always_comb begin
+    csr_access_valid  = id_result.valid && ex_valid.csr;
   end
 
   rice_core_csr_rw_unit #(
@@ -308,14 +385,11 @@ module rice_core_ex_stage
 //  Stall control
 //--------------------------------------------------------------
   always_comb begin
-    pipeline_if.stall = stall != '0;
+    pipeline_if.stall = stall;
   end
 
   always_comb begin
-    stall[0]  = mul_valid && (!mul_done);
-    stall[1]  = div_valid && (!div_done);
-    stall[2]  = memory_access_valid && (memory_access_done == '0);
-    stall[3]  = csr_access_valid && (!csr_access_done);
+    stall = id_result.valid && (ex_valid != '0) && ((ex_valid & ex_done) == '0);
   end
 
 //--------------------------------------------------------------
@@ -327,6 +401,10 @@ module rice_core_ex_stage
     env_if.mret         = id_result.valid && id_result.trap_control.mret;
     env_if.pc           = id_result.pc;
     env_if.inst         = id_result.inst;
+  end
+
+  always_comb begin
+    ex_error.illegal_instruction  = id_result.valid && (ex_valid == '0);
   end
 
   always_comb begin
@@ -345,7 +423,7 @@ module rice_core_ex_stage
     ebreak                                    = id_result.valid && id_result.trap_control.ebreak;
     ecall                                     = id_result.valid && id_result.trap_control.ecall;
     exception                                 = '0;
-    exception.illegal_instruction             = ex_error.csr_access;
+    exception.illegal_instruction             = ex_error.illegal_instruction || ex_error.csr_access;
     exception.breakpoint                      = ebreak;
     exception.ecall_from_u_mode               = ecall && (privilege_level == RICE_CORE_USER_MODE      );
     exception.ecall_from_s_mode               = ecall && (privilege_level == RICE_CORE_SUPERVISOR_MODE);
@@ -363,9 +441,7 @@ module rice_core_ex_stage
   end
 
   always_comb begin
-    ex_result_valid  =
-      (id_result.valid && (!mul_valid) && (!div_valid) && (!memory_access_valid) && (!csr_access_valid)) ||
-      mul_done || div_done || (memory_access_done != '0) || csr_access_done;
+    ex_result_valid  = id_result.valid && (((ex_valid & ex_done) != '0) || (ex_valid == '0));
   end
 
   always_ff @(posedge i_clk, negedge i_rst_n) begin
@@ -386,16 +462,11 @@ module rice_core_ex_stage
         end
 
         case (1'b1)
-          mul_done:
-            ex_result.rd_value  <= mul_data;
-          div_done:
-            ex_result.rd_value  <= div_data;
-          memory_access_done[1]:
-            ex_result.rd_value  <= memory_access_data;
-          csr_access_done:
-            ex_result.rd_value  <= csr_access_data;
-          default:
-            ex_result.rd_value  <= alu_data;
+          mul_done:               ex_result.rd_value  <= mul_data;
+          div_done:               ex_result.rd_value  <= div_data;
+          memory_access_done[1]:  ex_result.rd_value  <= memory_access_data;
+          csr_access_done:        ex_result.rd_value  <= csr_access_data;
+          default:                ex_result.rd_value  <= alu_data;
         endcase
       end
     end

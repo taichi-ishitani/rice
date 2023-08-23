@@ -47,11 +47,11 @@ ori:
 andi:
   { type: i, opcode: OP_IMM, funct3: 0b111 }
 slli:
-  { type: i, opcode: OP_IMM, funct3: 0b001, imm: '0000000xxxxx' }
+  { type: i, opcode: OP_IMM, funct3: 0b001, imm: '000000xxxxxx' }
 srli:
-  { type: i, opcode: OP_IMM, funct3: 0b101, imm: '0000000xxxxx' }
+  { type: i, opcode: OP_IMM, funct3: 0b101, imm: '000000xxxxxx' }
 srai:
-  { type: i, opcode: OP_IMM, funct3: 0b101, imm: '0100000xxxxx' }
+  { type: i, opcode: OP_IMM, funct3: 0b101, imm: '010000xxxxxx' }
 add:
   { type: r, opcode: OP, funct3: 0b000, funct7: 0b0000000 }
 sub:

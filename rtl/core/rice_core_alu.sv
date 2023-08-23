@@ -88,8 +88,12 @@ module rice_core_alu
       end
     endcase
 
-    size    = operand_2[4:0];
-    result  = data[size+:XLEN];
+    if (XLEN == 32) begin
+      result  = data[5'(operand_2)+:XLEN];
+    end
+    else begin
+      result  = data[6'(operand_2)+:XLEN];
+    end
 
     if (command == RICE_CORE_ALU_SLL) begin
       return {<<{result}};

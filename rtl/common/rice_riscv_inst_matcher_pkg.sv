@@ -98,15 +98,15 @@ package rice_riscv_inst_matcher_pkg;
   endfunction
 
   function automatic logic match_slli(rice_riscv_inst inst_bits);
-    return inst_bits ==? {25'b0000000xxxxxxxxxx001xxxxx, RICE_RISCV_OPCODE_OP_IMM};
+    return inst_bits ==? {25'b000000xxxxxxxxxxx001xxxxx, RICE_RISCV_OPCODE_OP_IMM};
   endfunction
 
   function automatic logic match_srli(rice_riscv_inst inst_bits);
-    return inst_bits ==? {25'b0000000xxxxxxxxxx101xxxxx, RICE_RISCV_OPCODE_OP_IMM};
+    return inst_bits ==? {25'b000000xxxxxxxxxxx101xxxxx, RICE_RISCV_OPCODE_OP_IMM};
   endfunction
 
   function automatic logic match_srai(rice_riscv_inst inst_bits);
-    return inst_bits ==? {25'b0100000xxxxxxxxxx101xxxxx, RICE_RISCV_OPCODE_OP_IMM};
+    return inst_bits ==? {25'b010000xxxxxxxxxxx101xxxxx, RICE_RISCV_OPCODE_OP_IMM};
   endfunction
 
   function automatic logic match_add(rice_riscv_inst inst_bits);

@@ -185,11 +185,11 @@ module rice_core_id_stage
         return get_alu_operation(RICE_CORE_ALU_OR, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
       match_andi(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_AND, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
-      match_slli(inst_bits):
+      match_slli(inst_bits) && ((XLEN == 64) || (inst_bits[25] == '0)):
         return get_alu_operation(RICE_CORE_ALU_SLL, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
-      match_srli(inst_bits):
+      match_srli(inst_bits) && ((XLEN == 64) || (inst_bits[25] == '0)):
         return get_alu_operation(RICE_CORE_ALU_SRL, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
-      match_srai(inst_bits):
+      match_srai(inst_bits) && ((XLEN == 64) || (inst_bits[25] == '0)):
         return get_alu_operation(RICE_CORE_ALU_SRA, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_IMM);
       match_add(inst_bits):
         return get_alu_operation(RICE_CORE_ALU_ADD, RICE_CORE_ALU_SOURCE_RS, RICE_CORE_ALU_SOURCE_RS);
