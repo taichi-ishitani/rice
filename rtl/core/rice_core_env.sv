@@ -185,8 +185,6 @@ module rice_core_env
     .i_mstatus_mpp_set            (mpp_set                ),
     .i_mstatus_mpp                (mpp[1]                 ),
     .o_mstatus_mpp                (mpp[0]                 ),
-    .o_misa_support_i             (),
-    .o_misa_support_m             (),
     .o_mtvec_mode                 (),
     .o_mtvec_base                 (mtvec_base             ),
     .o_mscratch                   (),

@@ -126,11 +126,15 @@ register_block {
     }
     bit_field {
       name 'support_i'
-      bit_assignment lsb: 8, width: 1; type :rw; initial_value 1
+      bit_assignment lsb: 8, width: 1; type :rof; initial_value 1
     }
     bit_field {
       name 'support_m'
-      bit_assignment lsb: 12, width: 1; type :rw; initial_value 1
+      bit_assignment lsb: 12, width: 1; type :rof; initial_value 1
+    }
+    bit_field {
+      name 'user_mode'
+      bit_assignment lsb: 20, width: 1; type :rof; initial_value 1
     }
     bit_field {
       name 'mxl'

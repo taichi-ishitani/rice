@@ -44,8 +44,6 @@ module rice_csr_m_level_xlen32
   input logic i_mstatus_mpp_set,
   input logic [1:0] i_mstatus_mpp,
   output logic [1:0] o_mstatus_mpp,
-  output logic o_misa_support_i,
-  output logic o_misa_support_m,
   output logic o_mtvec_mode,
   output logic [29:0] o_mtvec_base,
   output logic [31:0] o_mscratch,
@@ -702,10 +700,10 @@ module rice_csr_m_level_xlen32
   end endgenerate
   generate if (1) begin : g_misa
     rggen_bit_field_if #(32) bit_field_if();
-    `rggen_tie_off_unused_signals(32, 32'hc0001110, bit_field_if)
+    `rggen_tie_off_unused_signals(32, 32'hc0101110, bit_field_if)
     rggen_default_register #(
       .READABLE       (1),
-      .WRITABLE       (1),
+      .WRITABLE       (0),
       .ADDRESS_WIDTH  (14),
       .OFFSET_ADDRESS (14'h0c04),
       .BUS_WIDTH      (32),
@@ -747,24 +745,23 @@ module rice_csr_m_level_xlen32
       rggen_bit_field_if #(1) bit_field_sub_if();
       `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 8, 1)
       rggen_bit_field #(
-        .WIDTH          (1),
-        .INITIAL_VALUE  (INITIAL_VALUE),
-        .SW_WRITE_ONCE  (0),
-        .TRIGGER        (0)
+        .WIDTH              (1),
+        .STORAGE            (0),
+        .EXTERNAL_READ_DATA (1)
       ) u_bit_field (
-        .i_clk              (i_clk),
-        .i_rst_n            (i_rst_n),
+        .i_clk              ('0),
+        .i_rst_n            ('0),
         .bit_field_if       (bit_field_sub_if),
         .o_write_trigger    (),
         .o_read_trigger     (),
-        .i_sw_write_enable  ('1),
+        .i_sw_write_enable  ('0),
         .i_hw_write_enable  ('0),
         .i_hw_write_data    ('0),
         .i_hw_set           ('0),
         .i_hw_clear         ('0),
-        .i_value            ('0),
+        .i_value            (INITIAL_VALUE),
         .i_mask             ('1),
-        .o_value            (o_misa_support_i),
+        .o_value            (),
         .o_value_unmasked   ()
       );
     end
@@ -773,24 +770,48 @@ module rice_csr_m_level_xlen32
       rggen_bit_field_if #(1) bit_field_sub_if();
       `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 12, 1)
       rggen_bit_field #(
-        .WIDTH          (1),
-        .INITIAL_VALUE  (INITIAL_VALUE),
-        .SW_WRITE_ONCE  (0),
-        .TRIGGER        (0)
+        .WIDTH              (1),
+        .STORAGE            (0),
+        .EXTERNAL_READ_DATA (1)
       ) u_bit_field (
-        .i_clk              (i_clk),
-        .i_rst_n            (i_rst_n),
+        .i_clk              ('0),
+        .i_rst_n            ('0),
         .bit_field_if       (bit_field_sub_if),
         .o_write_trigger    (),
         .o_read_trigger     (),
-        .i_sw_write_enable  ('1),
+        .i_sw_write_enable  ('0),
         .i_hw_write_enable  ('0),
         .i_hw_write_data    ('0),
         .i_hw_set           ('0),
         .i_hw_clear         ('0),
-        .i_value            ('0),
+        .i_value            (INITIAL_VALUE),
         .i_mask             ('1),
-        .o_value            (o_misa_support_m),
+        .o_value            (),
+        .o_value_unmasked   ()
+      );
+    end
+    if (1) begin : g_user_mode
+      localparam bit INITIAL_VALUE = 1'h1;
+      rggen_bit_field_if #(1) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 20, 1)
+      rggen_bit_field #(
+        .WIDTH              (1),
+        .STORAGE            (0),
+        .EXTERNAL_READ_DATA (1)
+      ) u_bit_field (
+        .i_clk              ('0),
+        .i_rst_n            ('0),
+        .bit_field_if       (bit_field_sub_if),
+        .o_write_trigger    (),
+        .o_read_trigger     (),
+        .i_sw_write_enable  ('0),
+        .i_hw_write_enable  ('0),
+        .i_hw_write_data    ('0),
+        .i_hw_set           ('0),
+        .i_hw_clear         ('0),
+        .i_value            (INITIAL_VALUE),
+        .i_mask             ('1),
+        .o_value            (),
         .o_value_unmasked   ()
       );
     end
