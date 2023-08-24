@@ -1,14 +1,15 @@
-CLEAN += cosim
-CLEAN += whisper_connect
-
 PATH_COSIM              := $(PATH_TB)/cosim
 PATH_COSIM_ARCH_CHECKER := $(PATH_COSIM)/cosim-arch-checker
 PATH_WHISPER            ?= whisper
 
 COSIM_XLEN     ?= 32
-COSIM_ELF_FILE ?= $(wildcard *.elf)
+COSIM_FILELIST := cosim_runtime.f
 
-.PHONY: create_cosim_build_dir compile_cosim_lib
+CLEAN += cosim
+CLEAN += whisper_connect
+CLEAN += $(COSIM_FILELIST)
+
+.PHONY: create_cosim_build_dir compile_cosim_lib flgen_cosim
 
 create_cosim_build_dir:
 	mkdir -p cosim/build
@@ -25,16 +26,15 @@ compile_cosim_lib:
 	[ -d cosim ] || $(MAKE) create_cosim_build_dir
 	$(MAKE) -C cosim
 
-ifeq ($(strip $(COSIM)), on)
-  VCS_ARGS += +define+TB_RICE_ENABLE_COSIM
+flgen_cosim:
+	flgen --runtime --output $(COSIM_FILELIST) $(PATH_COSIM)/cosim_runtime.rb
 
-  SIMV_ARGS += -sv_lib $(PATH_SIM_BINARY)/cosim/lib/libcosim
-  SIMV_ARGS += +testfile=$(COSIM_ELF_FILE)
-  SIMV_ARGS += +whisper_json_path=$(PATH_SIM_BINARY)/cosim/whisper_config.json
-  SIMV_ARGS += +whisper_path=$(PATH_WHISPER)
-  SIMV_ARGS += +dutmon_tracer
-  SIMV_ARGS += +bridge_tracer
-  SIMV_ARGS += +enable_cosim
+export $(PATH_WHISPER)
+
+ifeq ($(strip $(COSIM)), on)
+  VCS_ARGS  += +define+TB_RICE_ENABLE_COSIM
+  SIMV_ARGS += -f $(COSIM_FILELIST)
 
   pre_compile_vcs: compile_cosim_lib
+  sim_vcs: flgen_cosim
 endif

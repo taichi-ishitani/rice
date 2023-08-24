@@ -7,7 +7,7 @@
 .inter.vpd.uvm
 .restartSimSession.tcl.old
 .synopsys_dve_rebuild.tcl
-compile.f
+*.f
 csrc
 DVEfiles
 simv*

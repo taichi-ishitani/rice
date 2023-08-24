@@ -72,6 +72,8 @@ VCS_ARGS += -top tb
 PATH_SIM_BINARY := ../sim_binary
 PATH_SIMV       := $(PATH_SIM_BINARY)/simv
 
+export PATH_SIM_BINARY
+
 .PHONY: pre_compile_vcs compile_vcs __compile_vcs pre_sim_vcs sim_vcs
 
 pre_compile_vcs:
