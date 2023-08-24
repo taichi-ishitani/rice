@@ -14,6 +14,10 @@ simv*
 ucli.key
 vc_hdrs.h
 
+# cosim
+**/sim_binary/cosim
+whisper_connect
+
 # riscv-tests
 *.bin
 *.dump

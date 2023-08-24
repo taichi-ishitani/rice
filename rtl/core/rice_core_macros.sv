@@ -26,7 +26,8 @@ typedef struct packed { \
   rice_core_csr_access        csr_access; \
 } rice_core_id_result; \
 typedef struct packed { \
-  logic           valid; \
-  rice_riscv_rd   rd; \
-  rice_core_value rd_value; \
+  logic               valid; \
+  rice_core_ex_error  error; \
+  rice_riscv_rd       rd; \
+  rice_core_value     rd_value; \
 } rice_core_ex_result;

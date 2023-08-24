@@ -78,6 +78,7 @@ module tb_rice_core_env_pipeline_monitor_if_wrapper
 
   always_comb begin
     monitor_if.ex_result.valid    = pipeline_if.ex_result.valid;
+    monitor_if.ex_result.error    = pipeline_if.ex_result.error;
     monitor_if.ex_result.rd       = pipeline_if.ex_result.rd;
     monitor_if.ex_result.rd_value = pipeline_if.ex_result.rd_value;
   end

@@ -4,84 +4,97 @@ class tb_rice_core_env_pipeline_monitor_item extends tue_object_base #(
   .STATUS         (tb_rice_core_env_status        )
 );
   longint id;
+  bit     misaligned_pc;
+  bit     illegal_instruction;
+  bit     invalid_csr_access;
 
-  function void start_if(
-    input tb_rice_core_env_pipeline_monitor_vif vif,
-    ref   string                                log_commands[$]
-  );
+  function void start_if(tb_rice_core_env_pipeline_monitor_vif vif);
     pc    = vif.monitor_cb.inst_request_address;
     xlen  = 32;
-    log_commands.push_back($sformatf("I\t%0d\t%0d\t%0d", id, id, 0));
-    log_commands.push_back($sformatf("S\t%0d\t%0d\t%s", id, 0, "if"));
   endfunction
 
-  function void end_if(
-    input tb_rice_core_env_pipeline_monitor_vif vif,
-    ref   string                                log_commands[$]
-  );
+  function void end_if(tb_rice_core_env_pipeline_monitor_vif vif);
     set_inst(vif.monitor_cb.if_result.inst);
-    log_commands.push_back($sformatf("E\t%0d\t%0d\t%s", id, 0, "if"));
   endfunction
 
-  function void flush_if(ref string log_commands[$]);
-    add_inst_label(log_commands);
-    log_commands.push_back($sformatf("R\t%0d\t%0d\t%0d", id, 0, 1));
+  function void flush_if();
   endfunction
 
-  function void start_id(
-    input tb_rice_core_env_pipeline_monitor_vif vif,
-    ref   string                                log_commands[$]
-  );
-    log_commands.push_back($sformatf("S\t%0d\t%0d\t%s", id, 0, "id"));
+  function void start_id(tb_rice_core_env_pipeline_monitor_vif vif);
   endfunction
 
-  function void end_id(
-    input tb_rice_core_env_pipeline_monitor_vif vif,
-    ref   string                                log_commands[$]
-  );
-    log_commands.push_back($sformatf("E\t%0d\t%0d\t%s", id, 0, "id"));
+  function void end_id(tb_rice_core_env_pipeline_monitor_vif vif);
+    rs1_value = vif.monitor_cb.id_result.rs1_value;
+    rs2_value = vif.monitor_cb.id_result.rs2_value;
+    imm_value = vif.monitor_cb.id_result.imm_value;
   endfunction
 
-  function void flush_id(ref string log_commands[$]);
-    add_inst_label(log_commands);
-    log_commands.push_back($sformatf("R\t%0d\t%0d\t%0d", id, 0, 1));
+  function void flush_id();
   endfunction
 
-  function void start_ex(
-    input tb_rice_core_env_pipeline_monitor_vif vif,
-    ref   string                                log_commands[$]
-  );
-    log_commands.push_back($sformatf("S\t%0d\t%0d\t%s", id, 0, "ex"));
+  function void start_ex(tb_rice_core_env_pipeline_monitor_vif vif);
   endfunction
 
-  function void end_ex(
-    input tb_rice_core_env_pipeline_monitor_vif vif,
-    ref   string                                log_commands[$]
-  );
-    log_commands.push_back($sformatf("E\t%0d\t%0d\t%s", id, 0, "ex"));
+  function void end_ex(tb_rice_core_env_pipeline_monitor_vif vif);
+    if (vif.monitor_cb.ex_result.error == '0) begin
+      rd        = vif.monitor_cb.ex_result.rd;
+      rd_value  = vif.monitor_cb.ex_result.rd_value;
+    end
+    else begin
+      misaligned_pc       = vif.monitor_cb.ex_result.error.misaligned_pc;
+      illegal_instruction = vif.monitor_cb.ex_result.error.illegal_instruction;
+      invalid_csr_access  = vif.monitor_cb.ex_result.error.csr_access;
+    end
   endfunction
 
-  function void start_wb(
-    input tb_rice_core_env_pipeline_monitor_vif vif,
-    ref   string                                log_commands[$]
-  );
-    log_commands.push_back($sformatf("S\t%0d\t%0d\t%s", id, 0, "wb"));
+  function void start_wb(tb_rice_core_env_pipeline_monitor_vif vif);
   endfunction
 
-  function void end_wb(
-    input tb_rice_core_env_pipeline_monitor_vif vif,
-    ref   string                                log_commands[$]
-  );
-    add_inst_label(log_commands);
-    log_commands.push_back($sformatf("E\t%0d\t%0d\t%s", id, 0, "wb"));
-  endfunction
-
-  protected function void add_inst_label(ref string log_commands[$]);
-    log_commands.push_back($sformatf("L\t%0d\t%0d\t%s", id, 0, print_inst()));
+  function void end_wb(tb_rice_core_env_pipeline_monitor_vif vif);
   endfunction
 
   `tue_object_default_constructor(tb_rice_core_env_pipeline_monitor_item)
   `uvm_object_utils(tb_rice_core_env_pipeline_monitor_item)
+endclass
+
+class tb_rice_core_env_pipeline_sub_monitor_base extends tue_component #(
+  .CONFIGURATION  (tb_rice_core_env_configuration ),
+  .STATUS         (tb_rice_core_env_status        )
+);
+  virtual function void start_if(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
+  endfunction
+
+  virtual function void end_if(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
+  endfunction
+
+  virtual function void flush_if(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
+  endfunction
+
+  virtual function void start_id(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
+  endfunction
+
+  virtual function void end_id(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
+  endfunction
+
+  virtual function void flush_id(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
+  endfunction
+
+  virtual function void start_ex(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
+  endfunction
+
+  virtual function void end_ex(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
+  endfunction
+
+  virtual function void start_wb(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
+  endfunction
+
+  virtual function void end_wb(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
+  endfunction
+
+  virtual function void end_monitor_cycle(longint cycles);
+  endfunction
+
+  `tue_component_default_constructor(tb_rice_core_env_pipeline_sub_monitor_base)
 endclass
 
 class tb_rice_core_env_pipeline_monitor extends tue_component #(
@@ -89,107 +102,91 @@ class tb_rice_core_env_pipeline_monitor extends tue_component #(
   .STATUS         (tb_rice_core_env_status        )
 );
   protected tb_rice_core_env_pipeline_monitor_vif vif;
-  protected int                                   fd;
   protected longint                               instruction_id;
   protected longint unsigned                      cycles;
-  protected longint unsigned                      cycles_latest;
   tb_rice_core_env_pipeline_monitor_item          if_items[$];
   tb_rice_core_env_pipeline_monitor_item          id_items[$];
   tb_rice_core_env_pipeline_monitor_item          ex_items[$];
   tb_rice_core_env_pipeline_monitor_item          wb_items[$];
+  tb_rice_core_env_pipeline_sub_monitor_base      sub_monitors[$];
 
   task run_phase(uvm_phase phase);
-    string  log_commands[$];
-
     instruction_id  = 0;
     cycles          = 0;
-    cycles_latest   = 0;
     vif             = configuration.tb_context.pipeline_monitor_vif;
-    fd              = open_trace_file();
     while (1) @(vif.monitor_cb) begin
       ++cycles;
-      monitor_pipeline(log_commands);
-      if (log_commands.size() > 0) begin
-        output_log_commands(log_commands);
-        log_commands.delete();
-        cycles_latest = cycles;
-      end
+      monitor_pipeline();
     end
   endtask
 
-  function void final_phase(uvm_phase phase);
-    super.final_phase(phase);
-    close_trace_file();
-  endfunction
+  `define tb_rice_core_monitor_pipeline_item(PHASE) \
+  item.PHASE(vif); \
+  foreach (sub_monitors[__i]) begin \
+    sub_monitors[__i].PHASE(cycles, item); \
+  end
 
-  protected function int open_trace_file();
-    int fd;
-
-    fd  = $fopen(configuration.pipeline_trace_file, "w");
-    if (fd == 0) begin
-      `uvm_fatal(
-        "PIPELINE_TRACE",
-        $sformatf("cannot open such file: %s", configuration.pipeline_trace_file)
-      )
-    end
-
-    $fdisplay(fd, "Kanata\t0004");
-    $fdisplay(fd, "C=\t%0d", cycles);
-
-    return fd;
-  endfunction
-
-  protected function void close_trace_file();
-    $fclose(fd);
-  endfunction
-
-  protected task monitor_pipeline(ref string log_commands[$]);
+  protected task monitor_pipeline();
     tb_rice_core_env_pipeline_monitor_item  item;
 
     if (vif.monitor_cb.flush) begin
-      foreach (id_items[i]) begin
-        id_items[i].flush_id(log_commands);
-      end
-      id_items.delete();
-
-      foreach (if_items[i]) begin
-        if_items[i].flush_if(log_commands);
-      end
-      if_items.delete();
+      do_flush();
     end
 
     if (vif.monitor_cb.inst_request_valid) begin
       item  = create_monotor_item();
-      item.start_if(vif, log_commands);
+      `tb_rice_core_monitor_pipeline_item(start_if)
       if_items.push_back(item);
     end
 
     if (vif.monitor_cb.if_valid) begin
       item  = if_items.pop_front();
-      item.end_if(vif, log_commands);
-      item.start_id(vif, log_commands);
+      `tb_rice_core_monitor_pipeline_item(end_if)
+      `tb_rice_core_monitor_pipeline_item(start_id)
       id_items.push_back(item);
     end
 
     if (vif.monitor_cb.id_valid) begin
       item  = id_items.pop_front();
-      item.end_id(vif, log_commands);
-      item.start_ex(vif, log_commands);
+      `tb_rice_core_monitor_pipeline_item(end_id)
+      `tb_rice_core_monitor_pipeline_item(start_ex)
       ex_items.push_back(item);
     end
 
     if (vif.monitor_cb.ex_valid) begin
       item  = ex_items.pop_front();
-      item.end_ex(vif, log_commands);
-      item.start_wb(vif, log_commands);
+      `tb_rice_core_monitor_pipeline_item(end_ex)
+      `tb_rice_core_monitor_pipeline_item(start_wb)
       wb_items.push_back(item);
     end
 
     if (vif.monitor_cb.wb_valid) begin
       item  = wb_items.pop_front();
-      item.end_wb(vif, log_commands);
+      `tb_rice_core_monitor_pipeline_item(end_wb)
+    end
+
+    foreach (sub_monitors[i]) begin
+      sub_monitors[i].end_monitor_cycle(cycles);
     end
   endtask
+
+  protected function void do_flush();
+    foreach (id_items[i]) begin
+      id_items[i].flush_id();
+      foreach (sub_monitors[j]) begin
+        sub_monitors[j].flush_id(cycles, id_items[i]);
+      end
+    end
+    id_items.delete();
+
+    foreach (if_items[i]) begin
+      if_items[i].flush_if();
+      foreach (sub_monitors[j]) begin
+        sub_monitors[j].flush_if(cycles, if_items[i]);
+      end
+    end
+    if_items.delete();
+  endfunction
 
   protected function tb_rice_core_env_pipeline_monitor_item create_monotor_item();
     tb_rice_core_env_pipeline_monitor_item  item;
@@ -198,14 +195,7 @@ class tb_rice_core_env_pipeline_monitor extends tue_component #(
     return item;
   endfunction
 
-  protected function void output_log_commands(string log_commands[$]);
-    longint unsigned  cycle_count;
-    cycle_count = cycles - cycles_latest;
-    $fdisplay(fd, "C\t%0d", cycle_count);
-    foreach (log_commands[i]) begin
-      $fdisplay(fd, log_commands[i]);
-    end
-  endfunction
+  `undef  tb_rice_core_monitor_pipeline_item
 
   `tue_component_default_constructor(tb_rice_core_env_pipeline_monitor)
   `uvm_component_utils(tb_rice_core_env_pipeline_monitor)

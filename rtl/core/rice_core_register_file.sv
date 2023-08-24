@@ -29,8 +29,12 @@ module rice_core_register_file
     ex_result = pipeline_if.ex_result;
   end
 
+  function automatic logic is_writable(rice_core_ex_result ex_result);
+    return ex_result.valid && (ex_result.rd != rice_riscv_rd'(0)) && (ex_result.error == '0);
+  endfunction
+
   always_ff @(posedge i_clk) begin
-    if (ex_result.valid && (ex_result.rd != rice_riscv_rd'(0))) begin
+    if (is_writable(ex_result)) begin
       register_file[ex_result.rd] <= ex_result.rd_value;
     end
   end

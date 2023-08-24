@@ -10,6 +10,7 @@ FILELIST_COMPILE ?= compile.f
 FILELIST_RUNTIME ?= runtime.f
 DUMP             ?= off
 GUI              ?= off
+COSIM            ?= off
 UVM_VERSION      ?= 1.2
 RANDOM_SEED      ?= auto
 VERBOSITY        ?= UVM_LOW

@@ -12,10 +12,12 @@ class tb_rice_core_env_configuration extends tb_rice_env_configuration_base #(
   tb_rice_bus_configuration inst_bus_cfg;
   tb_rice_bus_configuration data_bus_cfg;
   string                    pipeline_trace_file;
+  bit                       enable_cosim;
 
   protected function void parse_plugargs();
     super.parse_plugargs();
     `tue_define_plusarg_string(+pipeline_trace_file, pipeline_trace_file)
+    `tue_define_plusarg_flag(+enable_cosim, enable_cosim)
   endfunction
 
   protected function void create_sub_cfg();

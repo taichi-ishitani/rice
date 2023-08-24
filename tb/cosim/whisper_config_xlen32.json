@@ -1,0 +1,15 @@
+{
+  "xlen": 32,
+  "isa": "rv32im",
+  "reset_vec": "0x80000000",
+  "csr": {
+    "misa": {
+      "reset": "0x40101110",
+      "mask": "0x00000000"
+    },
+    "pmpaddr": {
+      "exists": "false",
+      "range": [0, 63]
+    }
+  }
+}

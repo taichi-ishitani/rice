@@ -92,6 +92,12 @@ package rice_core_pkg;
     RICE_CORE_CSR_ACCESS_RCI  = 3'b111
   } rice_core_csr_access;
 
+  typedef struct packed {
+    logic illegal_instruction;
+    logic misaligned_pc;
+    logic csr_access;
+  } rice_core_ex_error;
+
   typedef enum logic [1:0] {
     RICE_CORE_USER_MODE       = 2'b00,
     RICE_CORE_SUPERVISOR_MODE = 2'b01,

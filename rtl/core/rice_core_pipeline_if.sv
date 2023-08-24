@@ -26,6 +26,7 @@ interface rice_core_pipeline_if
     input   flush,
     input   if_result,
     output  id_result,
+    input   ex_result,
     input   register_file
   );
 

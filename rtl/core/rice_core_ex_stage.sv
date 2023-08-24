@@ -25,16 +25,9 @@ module rice_core_ex_stage
     logic csr;
   } rice_core_ex_type;
 
-  typedef struct packed {
-    logic illegal_instruction;
-    logic misaligned_pc;
-    logic csr_access;
-  } rice_core_ex_error;
-
   rice_core_id_result       id_result;
   rice_core_value           rs1_value;
   rice_core_value           rs2_value;
-  rice_core_ex_result       wb_result;
   logic                     flush;
   rice_core_pc              flush_pc;
   rice_core_jamp_operation  jamp_condition;
@@ -95,51 +88,9 @@ module rice_core_ex_stage
 
   always_comb begin
     id_result = pipeline_if.id_result;
+    rs1_value = id_result.rs1_value;
+    rs2_value = id_result.rs2_value;
   end
-
-//--------------------------------------------------------------
-//  Forwarding
-//--------------------------------------------------------------
-  always_comb begin
-    rs1_value =
-      get_rs_value(
-        id_result.rs1, id_result.rs1_value,
-        wb_result, ex_result
-      );
-    rs2_value =
-      get_rs_value(
-        id_result.rs2, id_result.rs2_value,
-        wb_result, ex_result
-      );
-  end
-
-  always_ff @(posedge i_clk, negedge i_rst_n) begin
-    if (!i_rst_n) begin
-      wb_result <= rice_core_ex_result'(0);
-    end
-    else if (!i_enable) begin
-      wb_result <= rice_core_ex_result'(0);
-    end
-    else if (!stall) begin
-      wb_result <= ex_result;
-    end
-  end
-
-  function automatic rice_core_value get_rs_value(
-    rice_riscv_rs       rs,
-    rice_core_value     rs_value,
-    rice_core_ex_result wb_result,
-    rice_core_ex_result ex_result
-  );
-    logic [1:0] forwarding;
-    forwarding[1] = wb_result.valid && (rs == wb_result.rd) && (rs != rice_riscv_rs'(0));
-    forwarding[0] = ex_result.valid && (rs == ex_result.rd) && (rs != rice_riscv_rs'(0));
-    case (1'b1)
-      forwarding[0]:  return ex_result.rd_value;
-      forwarding[1]:  return wb_result.rd_value;
-      default:        return rs_value;
-    endcase
-  endfunction
 
 //--------------------------------------------------------------
 //  PC control
@@ -454,13 +405,8 @@ module rice_core_ex_stage
     else if (!stall) begin
       ex_result.valid <= ex_result_valid;
       if (ex_result_valid) begin
-        if (ex_error == '0) begin
-          ex_result.rd  <= pipeline_if.id_result.rd;
-        end
-        else begin
-          ex_result.rd  <= rice_riscv_rd'(0);
-        end
-
+        ex_result.error <= ex_error;
+        ex_result.rd    <= pipeline_if.id_result.rd;
         case (1'b1)
           mul_done:               ex_result.rd_value  <= mul_data;
           div_done:               ex_result.rd_value  <= div_data;

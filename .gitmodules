@@ -13,3 +13,6 @@
 [submodule "rtl/csr/rggen-sv-rtl"]
 	path = rtl/csr/rggen-sv-rtl
 	url = https://github.com/rggen/rggen-sv-rtl.git
+[submodule "tb/cosim/cosim-arch-checker"]
+	path = tb/cosim/cosim-arch-checker
+	url = https://github.com/tenstorrent/cosim-arch-checker.git

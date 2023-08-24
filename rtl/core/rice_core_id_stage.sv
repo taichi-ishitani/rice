@@ -19,10 +19,6 @@ module rice_core_id_stage
   rice_core_id_result id_result;
 
   always_comb begin
-    pipeline_if.id_result = id_result;
-  end
-
-  always_comb begin
     if_result = pipeline_if.if_result;
   end
 
@@ -295,6 +291,23 @@ module rice_core_id_stage
       default:                  return RICE_CORE_CSR_ACCESS_NONE;
     endcase
   endfunction
+
+//--------------------------------------------------------------
+//  Forwarding
+//--------------------------------------------------------------
+  rice_core_forwarding #(
+    .XLEN (XLEN ),
+    .ID_RESULT  (rice_core_id_result  ),
+    .EX_RESULT  (rice_core_ex_result  )
+  ) u_forwarding (
+    .i_clk        (i_clk                  ),
+    .i_rst_n      (i_rst_n                ),
+    .i_enable     (i_enable               ),
+    .i_stall      (pipeline_if.stall      ),
+    .i_id_result  (id_result              ),
+    .i_ex_result  (pipeline_if.ex_result  ),
+    .o_id_result  (pipeline_if.id_result  )
+  );
 
 //--------------------------------------------------------------
 //  Debug

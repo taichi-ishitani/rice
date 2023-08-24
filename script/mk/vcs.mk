@@ -72,12 +72,14 @@ VCS_ARGS += -top tb
 PATH_SIM_BINARY := ../sim_binary
 PATH_SIMV       := $(PATH_SIM_BINARY)/simv
 
-.PHONY: compile_vcs __compile_vcs pre_sim_vcs sim_vcs
+.PHONY: pre_compile_vcs compile_vcs __compile_vcs pre_sim_vcs sim_vcs
+
+pre_compile_vcs:
 
 compile_vcs:
 	$(MAKE) -C $(PATH_SIM_BINARY) __compile_vcs
 
-__compile_vcs: flgen_vcs
+__compile_vcs: pre_compile_vcs flgen_vcs
 	[ -f $(PATH_SIMV) ] || vcs $(VCS_ARGS)
 
 pre_sim_vcs:
