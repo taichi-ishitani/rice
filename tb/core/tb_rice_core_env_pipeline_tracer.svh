@@ -61,8 +61,8 @@ class tb_rice_core_env_pipeline_tracer extends tb_rice_core_env_pipeline_sub_mon
   function void end_monitor_cycle(longint cycles);
     if (log_commands.size() > 0) begin
       output_log_commands(cycles);
+      cycles_latest = cycles;
     end
-    cycles_latest = cycles;
   endfunction
 
   protected function int open_trace_file();
