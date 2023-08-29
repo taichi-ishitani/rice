@@ -12,6 +12,7 @@ register_block {
   register {
     name 'cycle'
     offset_address byte_address(0xC00)
+    type :variable_access
     bit_field {
       bit_assignment lsb: 0, width: XLEN; type :ro
     }
@@ -20,6 +21,7 @@ register_block {
   register {
     name 'instret'
     offset_address byte_address(0xC02)
+    type :variable_access
     bit_field {
       bit_assignment lsb: 0, width: XLEN; type :ro
     }
@@ -29,6 +31,7 @@ register_block {
     register {
       name 'cycleh'
       offset_address byte_address(0xC80)
+      type :variable_access
       bit_field {
         bit_assignment lsb: 0, width: XLEN; type :ro
       }
@@ -37,6 +40,7 @@ register_block {
     register {
       name 'instreth'
       offset_address byte_address(0xC82)
+      type :variable_access
       bit_field {
         bit_assignment lsb: 0, width: XLEN; type :ro
       }

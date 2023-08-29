@@ -19,11 +19,15 @@ module rice_core_env
   rice_core_privilege_level         privilege_level;
   logic                             do_trap;
   logic                             do_return;
+  logic                             cycle_en;
+  logic                             instret_en;
   logic                             mie_set;
   logic [1:0]                       mie;
   logic                             mpie_set;
   logic [1:0]                       mpie;
   logic [MTVEC_BASE_WIDTH-1:0]      mtvec_base;
+  logic                             mcounteren_cy;
+  logic                             mcounteren_ir;
   logic                             mpp_set;
   logic [1:0][1:0]                  mpp;
   logic                             mepc_set;
@@ -113,6 +117,17 @@ module rice_core_env
 //  Machine counter
 //--------------------------------------------------------------
   always_comb begin
+    if (privilege_level == RICE_CORE_MACHINE_MODE) begin
+      cycle_en    = '1;
+      instret_en  = '1;
+    end
+    else begin
+      cycle_en    = mcounteren_cy;
+      instret_en  = mcounteren_ir;
+    end
+  end
+
+  always_comb begin
     mcycle_up[0]  = i_enable;
     mcycle_up[1]  = mcycle_up[0] && (mcycle[0*XLEN+:XLEN] == '1);
   end
@@ -136,7 +151,7 @@ module rice_core_env
       [12'h7A0:12'h7AF],  //  Machine lavel standard rw debug
       [12'hB00:12'hBBF],  //  Machine lavel standard rw
       [12'hF00:12'hFBF]:  //  Machine lavel standard read only
-        csr_select  = 2'd1;
+        csr_select  = (privilege_level == RICE_CORE_MACHINE_MODE) ? 2'd1 : 2'd2;
       default:
         csr_select  = 2'd2;
     endcase
@@ -159,13 +174,21 @@ module rice_core_env
     .ERROR_STATUS   (1  ),
     .INSERT_SLICER  (1  )
   ) u_csr_u_level (
-    .i_clk      (i_clk                  ),
-    .i_rst_n    (i_rst_n                ),
-    .csr_if     (csr_demux_if[0]        ),
-    .i_cycle    (mcycle[0*XLEN+:XLEN]   ),
-    .i_instret  (minstret[0*XLEN+:XLEN] ),
-    .i_cycleh   (mcycle[1*XLEN+:XLEN]   ),
-    .i_instreth (minstret[1*XLEN+:XLEN] )
+    .i_clk                    (i_clk                  ),
+    .i_rst_n                  (i_rst_n                ),
+    .csr_if                   (csr_demux_if[0]        ),
+    .i_cycle_write_enable     ('0                     ),
+    .i_cycle_read_enable      (cycle_en               ),
+    .i_cycle                  (mcycle[0*XLEN+:XLEN]   ),
+    .i_instret_write_enable   ('0                     ),
+    .i_instret_read_enable    (instret_en             ),
+    .i_instret                (minstret[0*XLEN+:XLEN] ),
+    .i_cycleh_write_enable    ('0                     ),
+    .i_cycleh_read_enable     (cycle_en               ),
+    .i_cycleh                 (mcycle[1*XLEN+:XLEN]   ),
+    .i_instreth_write_enable  ('0                     ),
+    .i_instreth_read_enable   (instret_en             ),
+    .i_instreth               (minstret[1*XLEN+:XLEN] )
   );
 
   rice_csr_m_level_xlen32 #(
@@ -187,6 +210,8 @@ module rice_core_env
     .o_mstatus_mpp                (mpp[0]                 ),
     .o_mtvec_mode                 (),
     .o_mtvec_base                 (mtvec_base             ),
+    .o_mcounteren_cy              (mcounteren_cy          ),
+    .o_mcounteren_ir              (mcounteren_ir          ),
     .o_mscratch                   (),
     .i_mepc_set                   (mepc_set               ),
     .i_mepc                       (mepc[1]                ),

@@ -5,4 +5,5 @@ unless target_tool? :svlint
 end
 
 source_file 'rggen_rice_bus_if_adapter.sv'
+source_file 'rggen_rice_register_variable_access.sv'
 source_file 'rggen_rice_bit_field_counter.sv'

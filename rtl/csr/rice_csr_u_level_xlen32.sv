@@ -32,9 +32,17 @@ module rice_csr_u_level_xlen32
   input logic i_clk,
   input logic i_rst_n,
   rice_bus_if.slave csr_if,
+  input logic i_cycle_write_enable,
+  input logic i_cycle_read_enable,
   input logic [31:0] i_cycle,
+  input logic i_instret_write_enable,
+  input logic i_instret_read_enable,
   input logic [31:0] i_instret,
+  input logic i_cycleh_write_enable,
+  input logic i_cycleh_read_enable,
   input logic [31:0] i_cycleh,
+  input logic i_instreth_write_enable,
+  input logic i_instreth_read_enable,
   input logic [31:0] i_instreth
 );
   rggen_register_if #(14, 32, 32) register_if[4]();
@@ -58,19 +66,19 @@ module rice_csr_u_level_xlen32
   generate if (1) begin : g_cycle
     rggen_bit_field_if #(32) bit_field_if();
     `rggen_tie_off_unused_signals(32, 32'hffffffff, bit_field_if)
-    rggen_default_register #(
-      .READABLE       (1),
-      .WRITABLE       (0),
+    rggen_rice_register_variable_access #(
       .ADDRESS_WIDTH  (14),
       .OFFSET_ADDRESS (14'h3000),
       .BUS_WIDTH      (32),
       .DATA_WIDTH     (32),
       .VALUE_WIDTH    (32)
     ) u_register (
-      .i_clk        (i_clk),
-      .i_rst_n      (i_rst_n),
-      .register_if  (register_if[0]),
-      .bit_field_if (bit_field_if)
+      .i_clk          (i_clk),
+      .i_rst_n        (i_rst_n),
+      .i_write_enable (i_cycle_write_enable),
+      .i_read_enable  (i_cycle_read_enable),
+      .register_if    (register_if[0]),
+      .bit_field_if   (bit_field_if)
     );
     if (1) begin : g_cycle
       rggen_bit_field_if #(32) bit_field_sub_if();
@@ -101,19 +109,19 @@ module rice_csr_u_level_xlen32
   generate if (1) begin : g_instret
     rggen_bit_field_if #(32) bit_field_if();
     `rggen_tie_off_unused_signals(32, 32'hffffffff, bit_field_if)
-    rggen_default_register #(
-      .READABLE       (1),
-      .WRITABLE       (0),
+    rggen_rice_register_variable_access #(
       .ADDRESS_WIDTH  (14),
       .OFFSET_ADDRESS (14'h3008),
       .BUS_WIDTH      (32),
       .DATA_WIDTH     (32),
       .VALUE_WIDTH    (32)
     ) u_register (
-      .i_clk        (i_clk),
-      .i_rst_n      (i_rst_n),
-      .register_if  (register_if[1]),
-      .bit_field_if (bit_field_if)
+      .i_clk          (i_clk),
+      .i_rst_n        (i_rst_n),
+      .i_write_enable (i_instret_write_enable),
+      .i_read_enable  (i_instret_read_enable),
+      .register_if    (register_if[1]),
+      .bit_field_if   (bit_field_if)
     );
     if (1) begin : g_instret
       rggen_bit_field_if #(32) bit_field_sub_if();
@@ -144,19 +152,19 @@ module rice_csr_u_level_xlen32
   generate if (1) begin : g_cycleh
     rggen_bit_field_if #(32) bit_field_if();
     `rggen_tie_off_unused_signals(32, 32'hffffffff, bit_field_if)
-    rggen_default_register #(
-      .READABLE       (1),
-      .WRITABLE       (0),
+    rggen_rice_register_variable_access #(
       .ADDRESS_WIDTH  (14),
       .OFFSET_ADDRESS (14'h3200),
       .BUS_WIDTH      (32),
       .DATA_WIDTH     (32),
       .VALUE_WIDTH    (32)
     ) u_register (
-      .i_clk        (i_clk),
-      .i_rst_n      (i_rst_n),
-      .register_if  (register_if[2]),
-      .bit_field_if (bit_field_if)
+      .i_clk          (i_clk),
+      .i_rst_n        (i_rst_n),
+      .i_write_enable (i_cycleh_write_enable),
+      .i_read_enable  (i_cycleh_read_enable),
+      .register_if    (register_if[2]),
+      .bit_field_if   (bit_field_if)
     );
     if (1) begin : g_cycleh
       rggen_bit_field_if #(32) bit_field_sub_if();
@@ -187,19 +195,19 @@ module rice_csr_u_level_xlen32
   generate if (1) begin : g_instreth
     rggen_bit_field_if #(32) bit_field_if();
     `rggen_tie_off_unused_signals(32, 32'hffffffff, bit_field_if)
-    rggen_default_register #(
-      .READABLE       (1),
-      .WRITABLE       (0),
+    rggen_rice_register_variable_access #(
       .ADDRESS_WIDTH  (14),
       .OFFSET_ADDRESS (14'h3208),
       .BUS_WIDTH      (32),
       .DATA_WIDTH     (32),
       .VALUE_WIDTH    (32)
     ) u_register (
-      .i_clk        (i_clk),
-      .i_rst_n      (i_rst_n),
-      .register_if  (register_if[3]),
-      .bit_field_if (bit_field_if)
+      .i_clk          (i_clk),
+      .i_rst_n        (i_rst_n),
+      .i_write_enable (i_instreth_write_enable),
+      .i_read_enable  (i_instreth_read_enable),
+      .register_if    (register_if[3]),
+      .bit_field_if   (bit_field_if)
     );
     if (1) begin : g_instreth
       rggen_bit_field_if #(32) bit_field_sub_if();

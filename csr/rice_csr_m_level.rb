@@ -120,6 +120,7 @@ register_block {
   register {
     name 'misa'
     offset_address byte_address(0x301)
+    type :rowi
     bit_field {
       name 'support_e'
       bit_assignment lsb: 4, width: 1; type :ro; reference 'misa.support_i'
@@ -186,6 +187,19 @@ register_block {
     bit_field {
       name 'base'
       bit_assignment lsb: 2, width: XLEN - 2; type :rw; initial_value 0
+    }
+  }
+
+  register {
+    name 'mcounteren'
+    offset_address byte_address(0x306)
+    bit_field {
+      name 'cy'
+      bit_assignment lsb: 0, width: 1; type :rw; initial_value 0
+    }
+    bit_field {
+      name 'ir'
+      bit_assignment lsb: 2, width: 1; type :rw; initial_value 0
     }
   }
 
