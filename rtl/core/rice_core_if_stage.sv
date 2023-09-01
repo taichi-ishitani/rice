@@ -16,65 +16,58 @@ module rice_core_if_stage
 
   localparam  int COUNT_WIDTH = $clog2(FIFO_DEPTH + 1);
 
-  rice_core_pc            pc;
-  logic                   request_valid;
-  logic                   request_ack;
-  logic                   response_ack;
-  logic                   fifo_empty;
-  logic                   fifo_almost_full;
-  logic                   fifo_push;
-  logic                   fifo_pop;
-  rice_core_pc            pc_fetched;
-  rice_riscv_inst         inst;
-  logic                   flush;
-  logic                   flush_busy;
-  logic                   flush_done;
-  logic [COUNT_WIDTH-1:0] count;
+  rice_core_pc  [1:0]       pc;
+  logic                     request_ack;
+  logic                     response_ack;
+  logic                     fifo_empty;
+  logic                     fifo_full;
+  logic                     fifo_push;
+  logic                     fifo_pop;
+  rice_core_pc              pc_fetched;
+  rice_riscv_inst           inst;
+  logic                     flush;
+  logic                     flush_busy;
+  logic                     flush_done;
+  logic [COUNT_WIDTH-1:0]   flush_count;
+  logic [COUNT_WIDTH-1:0]   flush_count_next;
+  logic [COUNT_WIDTH-1:0]   count;
+  rice_bus_if #(XLEN, XLEN) bus_if();
 
 //--------------------------------------------------------------
 //  Request
 //--------------------------------------------------------------
   always_comb begin
-    inst_bus_if.request_valid = request_valid;
-    inst_bus_if.address       = pc;
-    inst_bus_if.strobe        = '0;
-    inst_bus_if.write_data    = '0;
+    bus_if.request_valid  = i_enable && ((!fifo_full) || (!pipeline_if.stall));
+    bus_if.address        = pc[0];
+    bus_if.strobe         = '0;
+    bus_if.write_data     = '0;
   end
 
   always_comb begin
-    request_ack = inst_bus_if.request_ack();
+    request_ack = bus_if.request_ack();
+  end
+
+  always_comb begin
+    if (pipeline_if.flush) begin
+      pc[0] = pipeline_if.flush_pc;
+    end
+    else begin
+      pc[0] = pc[1];
+    end
   end
 
   always_ff @(posedge i_clk, negedge i_rst_n) begin
     if (!i_rst_n) begin
-      request_valid <= '0;
-    end
-    else if (request_ack || (!request_valid)) begin
-      request_valid <=
-        i_enable && (!fifo_almost_full) && ((!flush) || flush_done);
-    end
-  end
-
-  always_ff @(posedge i_clk, negedge i_rst_n) begin
-    if (!i_rst_n) begin
-      pc  <= INITIAL_PC;
+      pc[1] <= INITIAL_PC;
     end
     else if (!i_enable) begin
-      pc  <= INITIAL_PC;
-    end
-    else if ((!request_valid) && pipeline_if.flush) begin
-      pc  <= pipeline_if.flush_pc;
+      pc[1] <= INITIAL_PC;
     end
     else if (request_ack) begin
-      if (pipeline_if.flush) begin
-        pc  <= pipeline_if.flush_pc;
-      end
-      else if (flush_busy) begin
-        pc  <= pc_fetched;
-      end
-      else begin
-        pc  <= pc + rice_core_pc'(4);
-      end
+      pc[1] <= pc[0] + rice_core_pc'(4);
+    end
+    else if (pipeline_if.flush) begin
+      pc[1] <= pipeline_if.flush_pc;
     end
   end
 
@@ -82,7 +75,7 @@ module rice_core_if_stage
 //  Response
 //--------------------------------------------------------------
   always_comb begin
-    inst_bus_if.response_ready  = '1;
+    bus_if.response_ready = '1;
   end
 
   always_comb begin
@@ -92,7 +85,7 @@ module rice_core_if_stage
   end
 
   always_comb begin
-    response_ack  = inst_bus_if.response_ack();
+    response_ack  = bus_if.response_ack();
   end
 
   always_ff @(posedge i_clk, negedge i_rst_n) begin
@@ -111,7 +104,7 @@ module rice_core_if_stage
   end
 
   always_comb begin
-    fifo_push = inst_bus_if.response_valid && (!flush);
+    fifo_push = bus_if.response_valid;
     fifo_pop  = pipeline_if.if_result.valid && (!pipeline_if.stall);
   end
 
@@ -120,36 +113,57 @@ module rice_core_if_stage
     .DEPTH      (FIFO_DEPTH       ),
     .THRESHOLD  (FIFO_DEPTH - 2   )
   ) u_inst_fifo (
-    .i_clk          (i_clk                  ),
-    .i_rst_n        (i_rst_n                ),
-    .i_clear        (flush                  ),
-    .o_empty        (fifo_empty             ),
-    .o_almost_full  (fifo_almost_full       ),
+    .i_clk          (i_clk            ),
+    .i_rst_n        (i_rst_n          ),
+    .i_clear        (flush            ),
+    .o_empty        (fifo_empty       ),
+    .o_almost_full  (fifo_full        ),
     .o_full         (),
     .o_word_count   (),
-    .i_push         (fifo_push              ),
-    .i_data         (inst_bus_if.read_data  ),
-    .i_pop          (fifo_pop               ),
-    .o_data         (inst                   )
+    .i_push         (fifo_push        ),
+    .i_data         (bus_if.read_data ),
+    .i_pop          (fifo_pop         ),
+    .o_data         (inst             )
+  );
+
+//--------------------------------------------------------------
+//  Slicer
+//--------------------------------------------------------------
+  rice_bus_slicer #(
+    .ADDRESS_WIDTH    (XLEN ),
+    .DATA_WIDTH       (XLEN ),
+    .REQUEST_STAGES   (1    ),
+    .RESPONSE_STAGES  (0    )
+  ) u_slicer (
+    .i_clk      (i_clk        ),
+    .i_rst_n    (i_rst_n      ),
+    .slave_if   (bus_if       ),
+    .master_if  (inst_bus_if  )
   );
 
 //--------------------------------------------------------------
 //  Flush control
 //--------------------------------------------------------------
   always_comb begin
+    flush_busy  = flush_count != COUNT_WIDTH'(0);
     flush       = pipeline_if.flush || flush_busy;
-    flush_done  = get_flush_done(flush, request_valid, request_ack, response_ack, count);
+  end
+
+  always_comb begin
+    case ({pipeline_if.flush, flush_busy, response_ack}) inside
+      3'b1?1:   flush_count_next  = count - COUNT_WIDTH'(1);
+      3'b1?0:   flush_count_next  = count;
+      3'b011:   flush_count_next  = flush_count - COUNT_WIDTH'(1);
+      default:  flush_count_next  = flush_count;
+    endcase
   end
 
   always_ff @(posedge i_clk, negedge i_rst_n) begin
     if (!i_rst_n) begin
-      flush_busy  <= '0;
+      flush_count <= COUNT_WIDTH'(0);
     end
-    else if (flush_done) begin
-      flush_busy  <= '0;
-    end
-    else if (pipeline_if.flush) begin
-      flush_busy  <= '1;
+    else if (pipeline_if.flush || response_ack) begin
+      flush_count <= flush_count_next;
     end
   end
 
@@ -164,17 +178,4 @@ module rice_core_if_stage
       count <= count - COUNT_WIDTH'(1);
     end
   end
-
-  function automatic logic get_flush_done(
-    logic                   flush,
-    logic                   request_valid,
-    logic                   request_ack,
-    logic                   response_ack,
-    logic [COUNT_WIDTH-1:0] count
-  );
-    logic [1:0] done;
-    done[0] = (!request_ack) && response_ack && (count == COUNT_WIDTH'(1));
-    done[1] = count == COUNT_WIDTH'(0);
-    return flush && (!request_valid) && (done != '0);
-  endfunction
 endmodule
