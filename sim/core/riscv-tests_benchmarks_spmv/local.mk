@@ -1,0 +1,1 @@
+../riscv-tests_benchmarks_dhrystone/local.mk
