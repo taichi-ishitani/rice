@@ -43,6 +43,8 @@ class tb_rice_core_basic_exception_test extends tb_rice_core_basic_test_base;
 
     write_inst(32'h0000_0600, inst_sw(0, 4, 12'h020));
     write_inst(32'h0000_0604, inst_sw(0, 5, 12'h024));
+
+    write_inst(32'h0000_0608, inst_nop());
   endtask
 
   protected task check_bus_access();

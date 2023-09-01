@@ -38,6 +38,7 @@ module rice_core_lsu
   logic [2*XLEN-1:0]        read_data;
   logic [XLEN-1:0]          read_data_1st;
   logic                     read_access_done;
+  rice_bus_if #(XLEN, XLEN) bus_if();
 
   always_comb begin
     address       = i_rs1_value + i_imm_value;
@@ -64,10 +65,10 @@ module rice_core_lsu
 //  Request
 //--------------------------------------------------------------
   always_comb begin
-    data_bus_if.request_valid = request_state inside {DO_1ST_ACCESS, DO_2ND_ACCESS};
-    data_bus_if.address       = request_address;
-    data_bus_if.strobe        = strobe;
-    data_bus_if.write_data    = write_data;
+    bus_if.request_valid  = get_request_valid(i_valid, request_state);
+    bus_if.address        = get_address(request_state, address);
+    bus_if.strobe         = get_strobe(request_state, offset, i_memory_access);
+    bus_if.write_data     = get_write_data(request_state, offset, i_rs2_value);
   end
 
   always_comb begin
@@ -76,7 +77,7 @@ module rice_core_lsu
 
   always_comb begin
     write_access_done =
-      data_bus_if.write_request_ack() &&
+      bus_if.write_request_ack() &&
       (single_access || (request_state == DO_2ND_ACCESS));
   end
 
@@ -87,26 +88,32 @@ module rice_core_lsu
     else begin
       case (request_state)
         IDLE: begin
-          if (request_start) begin
+          if (i_valid && (!bus_if.request_ready)) begin
             request_state <= DO_1ST_ACCESS;
+          end
+          else if (bus_if.request_ack() && (!single_access)) begin
+            request_state <= DO_2ND_ACCESS;
+          end
+          else if (bus_if.read_request_ack()) begin
+            request_state <= WAIT_FOR_DONE;
           end
         end
         DO_1ST_ACCESS: begin
-          if (data_bus_if.request_ack() && (!single_access)) begin
+          if (bus_if.request_ack() && (!single_access)) begin
             request_state <= DO_2ND_ACCESS;
           end
-          else if (data_bus_if.write_request_ack()) begin
+          else if (bus_if.write_request_ack()) begin
             request_state <= IDLE;
           end
-          else if (data_bus_if.read_request_ack()) begin
+          else if (bus_if.read_request_ack()) begin
             request_state <= WAIT_FOR_DONE;
           end
         end
         DO_2ND_ACCESS: begin
-          if (data_bus_if.write_request_ack()) begin
+          if (bus_if.write_request_ack()) begin
             request_state <= IDLE;
           end
-          else if (data_bus_if.read_request_ack()) begin
+          else if (bus_if.read_request_ack()) begin
             request_state <= WAIT_FOR_DONE;
           end
         end
@@ -119,30 +126,25 @@ module rice_core_lsu
     end
   end
 
-  always_ff @(posedge i_clk, negedge i_rst_n) begin
-    if (!i_rst_n) begin
-      request_address <= XLEN'(0);
-      strobe          <= STROBE_WIDTH'(0);
-      write_data      <= XLEN'(0);
-    end
-    else if (request_start || data_bus_if.request_ack()) begin
-      request_address <= get_address(request_state, address, request_address);
-      strobe          <= get_strobe(request_state, offset, i_memory_access);
-      write_data      <= get_write_data(request_state, offset, i_rs2_value);
-    end
-  end
+  function automatic logic get_request_valid(
+    logic           valid,
+    rice_core_state state
+  );
+    return (valid && (state == IDLE)) || (state inside {DO_1ST_ACCESS, DO_2ND_ACCESS});
+  endfunction
 
   function automatic logic [XLEN-1:0] get_address(
     rice_core_state   state,
-    logic [XLEN-1:0]  address,
-    logic [XLEN-1:0]  current_address
+    logic [XLEN-1:0]  address
   );
-    if (state == IDLE) begin
-      return address;
+    logic [XLEN-1:0]  bus_address;
+
+    bus_address = {address[XLEN-1:OFFSET_WIDTH], OFFSET_WIDTH'(0)};
+    if (state == DO_2ND_ACCESS) begin
+      bus_address = bus_address + XLEN'(BYTE_SIZE);
     end
-    else begin
-      return {current_address[XLEN-1:OFFSET_WIDTH], OFFSET_WIDTH'(0)} + XLEN'(BYTE_SIZE);
-    end
+
+    return bus_address;
   endfunction
 
   function automatic logic [STROBE_WIDTH-1:0] get_strobe(
@@ -150,8 +152,8 @@ module rice_core_lsu
     logic [OFFSET_WIDTH-1:0]  offset,
     rice_core_memory_access   memory_access
   );
-    logic [STROBE_WIDTH-1:0]      strobe_base;
-    logic [1:0][STROBE_WIDTH-1:0] strobe;
+    logic [STROBE_WIDTH-1:0]    strobe_base;
+    logic [2*STROBE_WIDTH-1:0]  strobe;
 
     case (memory_access)
       {RICE_CORE_MEMORY_ACCESS_STORE, RICE_CORE_MEMORY_ACCESS_MODE_B}:
@@ -175,11 +177,11 @@ module rice_core_lsu
       default:          strobe  = (2*STROBE_WIDTH)'({strobe_base, 7'(0)});
     endcase
 
-    if (state == IDLE) begin
-      return strobe[0];
+    if (state == DO_2ND_ACCESS) begin
+      return strobe[1*STROBE_WIDTH+:STROBE_WIDTH];
     end
     else begin
-      return strobe[1];
+      return strobe[0*STROBE_WIDTH+:STROBE_WIDTH];
     end
   endfunction
 
@@ -188,7 +190,7 @@ module rice_core_lsu
     logic [OFFSET_WIDTH-1:0]  offset,
     logic [XLEN-1:0]          rs2_value
   );
-    logic [1:0][XLEN-1:0] data;
+    logic [2*XLEN-1:0]  data;
 
     case (offset)
       OFFSET_WIDTH'(0): data  = (2*XLEN)'({rs2_value});
@@ -201,11 +203,11 @@ module rice_core_lsu
       default:          data  = (2*XLEN)'({rs2_value, (7*8)'(0)});
     endcase
 
-    if (state == IDLE) begin
-      return data[0];
+    if (state == DO_2ND_ACCESS) begin
+      return data[1*XLEN+:XLEN];
     end
     else begin
-      return data[1];
+      return data[0*XLEN+:XLEN];
     end
   endfunction
 
@@ -213,12 +215,12 @@ module rice_core_lsu
 //  Response
 //--------------------------------------------------------------
   always_comb begin
-    data_bus_if.response_ready  = response_state != IDLE;
+    bus_if.response_ready = response_state != IDLE;
   end
 
   always_comb begin
     read_access_done  =
-      data_bus_if.response_ack() &&
+      bus_if.response_ack() &&
       (single_access || (response_state == DO_2ND_ACCESS));
   end
 
@@ -229,20 +231,20 @@ module rice_core_lsu
     else begin
       case (response_state)
         IDLE: begin
-          if (data_bus_if.read_request_ack()) begin
+          if (bus_if.read_request_ack()) begin
             response_state  <= DO_1ST_ACCESS;
           end
         end
         DO_1ST_ACCESS: begin
-          if (data_bus_if.response_ack() && single_access) begin
+          if (bus_if.response_ack() && single_access) begin
             response_state  <= IDLE;
           end
-          else if (data_bus_if.response_ack()) begin
+          else if (bus_if.response_ack()) begin
             response_state  <= DO_2ND_ACCESS;
           end
         end
         DO_2ND_ACCESS: begin
-          if (data_bus_if.response_ack()) begin
+          if (bus_if.response_ack()) begin
             response_state  <= IDLE;
           end
         end
@@ -266,6 +268,21 @@ module rice_core_lsu
       read_data_1st <= data_bus_if.read_data;
     end
   end
+
+//--------------------------------------------------------------
+//  Slicer
+//--------------------------------------------------------------
+  rice_bus_slicer #(
+    .ADDRESS_WIDTH    (XLEN ),
+    .DATA_WIDTH       (XLEN ),
+    .REQUEST_STAGES   (1    ),
+    .RESPONSE_STAGES  (0    )
+  ) u_slicer (
+    .i_clk      (i_clk        ),
+    .i_rst_n    (i_rst_n      ),
+    .slave_if   (bus_if       ),
+    .master_if  (data_bus_if  )
+  );
 
 //--------------------------------------------------------------
 //  Result

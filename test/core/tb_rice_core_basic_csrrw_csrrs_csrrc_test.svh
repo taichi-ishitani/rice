@@ -19,6 +19,8 @@ class tb_rice_core_basic_csrrw_csrrs_csrrc_test extends tb_rice_core_basic_test_
     write_inst(32'h0000_0030, inst_sw(0, 2, 12'h010));
     write_inst(32'h0000_0034, inst_sw(0, 3, 12'h014));
     write_inst(32'h0000_0038, inst_sw(0, 4, 12'h018));
+
+    write_inst(32'h0000_003C, inst_nop());
   endtask
 
   protected task check_bus_access();

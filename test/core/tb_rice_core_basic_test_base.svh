@@ -20,6 +20,10 @@ class tb_rice_core_basic_test_base extends tb_rice_core_test_base;
   protected virtual task check_bus_access();
   endtask
 
+  protected function bit [31:0] inst_nop();
+    return inst_addi(0, 0, 0);
+  endfunction
+
   protected function bit [31:0] inst_lw(
     int         rd,
     int         rs,

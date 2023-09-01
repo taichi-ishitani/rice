@@ -50,6 +50,8 @@ class tb_rice_core_basic_slt_test extends tb_rice_core_basic_test_base;
     write_inst(32'h0000_009C, inst_sw(0, 5, 12'h068));
     write_inst(32'h0000_00A0, inst_sw(0, 6, 12'h06C));
     write_inst(32'h0000_00A4, inst_sw(0, 7, 12'h070));
+
+    write_inst(32'h0000_00A8, inst_nop());
   endtask
 
   protected task check_bus_access();

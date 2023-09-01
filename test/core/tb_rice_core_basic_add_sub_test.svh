@@ -25,6 +25,8 @@ class tb_rice_core_basic_add_sub_test extends tb_rice_core_basic_test_base;
     write_inst(32'h0000_0044, inst_sw(0, 2, 12'h024));
     write_inst(32'h0000_0048, inst_sw(0, 3, 12'h028));
     write_inst(32'h0000_004C, inst_sw(0, 4, 12'h02C));
+
+    write_inst(32'h0000_0050, inst_nop());
   endtask
 
   protected task check_bus_access();

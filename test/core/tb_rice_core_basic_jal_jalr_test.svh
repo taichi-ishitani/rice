@@ -9,6 +9,8 @@ class tb_rice_core_basic_jal_jalr_test extends tb_rice_core_basic_test_base;
     //  jalr
     write_inst(32'h0000_1008, inst_jalr(3, 1, 12'h100));
     write_inst(32'h0000_0100, inst_sw(0, 3, 12'h004));
+
+    write_inst(32'h0000_0104, inst_nop());
   endtask
 
   protected task check_bus_access();

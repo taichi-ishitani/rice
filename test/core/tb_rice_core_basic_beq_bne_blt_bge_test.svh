@@ -50,6 +50,8 @@ class tb_rice_core_basic_beq_bne_blt_bge_test extends tb_rice_core_basic_test_ba
     write_inst(32'h0000_00A4, inst_bgeu(0, 2, 12'h008));
     write_inst(32'h0000_00A8, inst_addi(14, 0, 12));
     write_inst(32'h0000_00AC, inst_sw(0, 14, 12'h02C));
+
+    write_inst(32'h0000_00B0, inst_nop());
   endtask
 
   protected task check_bus_access();

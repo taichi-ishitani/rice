@@ -51,6 +51,8 @@ class tb_rice_core_basic_sll_srl_sra_test extends tb_rice_core_basic_test_base;
     write_inst(32'h0000_0090, inst_sw(0, 4, 12'h050));
     write_inst(32'h0000_0094, inst_sw(0, 5, 12'h054));
     write_inst(32'h0000_0098, inst_sw(0, 6, 12'h058));
+
+    write_inst(32'h0000_009C, inst_nop());
   endtask
 
   protected task check_bus_access();

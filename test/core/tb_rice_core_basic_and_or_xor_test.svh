@@ -61,6 +61,8 @@ class tb_rice_core_basic_and_or_xor_test extends tb_rice_core_basic_test_base;
     write_inst(32'h0000_00B8, inst_sw(0, 3, 12'h054));
     write_inst(32'h0000_00BC, inst_sw(0, 4, 12'h058));
     write_inst(32'h0000_00C0, inst_sw(0, 5, 12'h05C));
+
+    write_inst(32'h0000_00C4, inst_nop());
   endtask
 
   protected task check_bus_access();
