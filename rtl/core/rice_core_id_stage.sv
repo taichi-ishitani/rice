@@ -13,6 +13,24 @@ module rice_core_id_stage
   `rice_core_define_types(XLEN)
 
 //--------------------------------------------------------------
+//  Register file
+//--------------------------------------------------------------
+  logic [XLEN-1:0]  rf[RICE_RISCV_RF_SIZE];
+
+  always_comb begin
+    pipeline_if.rf  = rf;
+  end
+
+  rice_core_register_file #(
+    .XLEN       (XLEN                 ),
+    .EX_RESULT  (rice_core_ex_result  )
+  ) u_register_file (
+    .i_clk        (i_clk                  ),
+    .i_ex_result  (pipeline_if.ex_result  ),
+    .o_rf         (rf                     )
+  );
+
+//--------------------------------------------------------------
 //  Decoder
 //--------------------------------------------------------------
   rice_core_if_result if_result;
@@ -37,8 +55,8 @@ module rice_core_id_stage
         id_result.rs1               <= decode_rs1(if_result.inst);
         id_result.rs2               <= decode_rs2(if_result.inst);
         id_result.rd                <= decode_rd(if_result.inst);
-        id_result.rs1_value         <= get_rs1_value(if_result.inst, pipeline_if.register_file);
-        id_result.rs2_value         <= get_rs2_value(if_result.inst, pipeline_if.register_file);
+        id_result.rs1_value         <= get_rs1_value(if_result.inst, rf);
+        id_result.rs2_value         <= get_rs2_value(if_result.inst, rf);
         id_result.imm_value         <= get_imm_value(if_result.inst);
         id_result.alu_operation     <= decode_alu_operation(if_result.inst);
         id_result.mul_operation     <= decode_mul_operation(if_result.inst);
@@ -90,21 +108,21 @@ module rice_core_id_stage
   endfunction
 
   function automatic rice_core_value get_rs1_value(
-    rice_riscv_inst         inst_bits,
-    rice_core_value [31:0]  register_file
+    rice_riscv_inst inst_bits,
+    rice_core_value rf[RICE_RISCV_RF_SIZE]
   );
     rice_riscv_inst_r_type  inst;
     inst  = rice_riscv_inst_r_type'(inst_bits);
-    return register_file[inst.rs1];
+    return rf[inst.rs1];
   endfunction
 
   function automatic rice_core_value get_rs2_value(
-    rice_riscv_inst         inst_bits,
-    rice_core_value [31:0]  register_file
+    rice_riscv_inst inst_bits,
+    rice_core_value rf[RICE_RISCV_RF_SIZE]
   );
     rice_riscv_inst_r_type  inst;
     inst  = rice_riscv_inst_r_type'(inst_bits);
-    return register_file[inst.rs2];
+    return rf[inst.rs2];
   endfunction
 
   function automatic rice_core_value get_imm_value(rice_riscv_inst inst_bits);

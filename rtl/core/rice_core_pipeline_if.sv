@@ -6,13 +6,13 @@ interface rice_core_pipeline_if
 );
   `rice_core_define_types(XLEN)
 
-  rice_core_if_result     if_result;
-  rice_core_id_result     id_result;
-  rice_core_ex_result     ex_result;
-  logic                   stall;
-  logic                   flush;
-  rice_core_pc            flush_pc;
-  rice_core_value [31:0]  register_file;
+  rice_core_if_result if_result;
+  rice_core_id_result id_result;
+  rice_core_ex_result ex_result;
+  logic               stall;
+  logic               flush;
+  rice_core_pc        flush_pc;
+  rice_core_value     rf[RICE_RISCV_RF_SIZE];
 
   modport if_stage (
     input   stall,
@@ -27,7 +27,7 @@ interface rice_core_pipeline_if
     input   if_result,
     output  id_result,
     input   ex_result,
-    input   register_file
+    output  rf
   );
 
   modport ex_stage (
@@ -38,16 +38,11 @@ interface rice_core_pipeline_if
     output  flush_pc
   );
 
-  modport rf (
-    input   ex_result,
-    output  register_file
-  );
-
   modport monitor (
     input if_result,
     input id_result,
     input ex_result,
-    input register_file,
+    input rf,
     input stall,
     input flush,
     input flush_pc

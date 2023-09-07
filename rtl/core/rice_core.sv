@@ -54,13 +54,6 @@ module rice_core (
     .csr_if       (csr_if       )
   );
 
-  rice_core_register_file #(
-    .XLEN (XLEN )
-  ) u_register_file (
-    .i_clk        (i_clk        ),
-    .pipeline_if  (pipeline_if  )
-  );
-
   rice_core_env #(
     .XLEN (XLEN )
   ) u_env (
