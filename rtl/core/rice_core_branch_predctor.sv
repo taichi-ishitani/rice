@@ -31,7 +31,7 @@ module rice_core_branch_predctor
   logic [1:0][PHT_INDEX_WIDTH-1:0]      pht_index;
   rice_core_pht_entry                   pht_entry;
   rice_core_btb_entry [BTB_ENTRIES-1:0] btb;
-  logic [1:0][BTB_INDEX_WIDTH]          btb_index;
+  logic [1:0][BTB_INDEX_WIDTH-1:0]      btb_index;
   rice_core_btb_entry                   btb_entry;
 
 //--------------------------------------------------------------
@@ -112,4 +112,49 @@ module rice_core_branch_predctor
     result.target_pc  = btb_entry.target_pc;
     return result;
   endfunction
+
+//--------------------------------------------------------------
+//  Debug
+//--------------------------------------------------------------
+  if (RICE_CORE_DEBUG) begin : g_debug
+    bit         bp_hit;
+    bit [63:0]  bp_hit_count;
+    bit         bp_miss;
+    bit [63:0]  bp_miss_count;
+    real        bp_hit_ratio;
+
+    always_comb begin
+      if (i_branch_result.taken || i_branch_result.not_taken) begin
+        bp_hit  = i_branch_result.misprediction == '0;
+        bp_miss = i_branch_result.misprediction != '0;
+      end
+      else begin
+        bp_hit  = 0;
+        bp_miss = i_branch_result.misprediction[0];
+      end
+    end
+
+    always_ff @(posedge i_clk, negedge i_rst_n) begin
+      if (!i_rst_n) begin
+        bp_hit_count  <= 0;
+        bp_miss_count <= 0;
+      end
+      else begin
+        if (bp_hit) begin
+          bp_hit_count  <= bp_hit_count + 1;
+        end
+        if (bp_miss) begin
+          bp_miss_count <= bp_miss_count + 1;
+        end
+      end
+    end
+
+    always_comb begin
+      bp_hit_ratio  = 0.0;
+      if ((bp_hit_count != 0) || (bp_miss_count != 0)) begin
+        bp_hit_ratio  =
+          real'(bp_hit_count) / (real'(bp_hit_count) + real'(bp_miss_count));
+      end
+    end
+  end
 endmodule
