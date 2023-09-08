@@ -48,7 +48,7 @@ package rice_core_pkg;
     logic jalr;
     logic beq_bge;
     logic bne_blt;
-  } rice_core_jamp_operation;
+  } rice_core_branch_operation;
 
   typedef enum logic [1:0] {
     RICE_CORE_MEMORY_ACCESS_NONE,

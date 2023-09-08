@@ -18,41 +18,38 @@ module rice_core_ex_stage
     logic alu;
     logic mul;
     logic div;
-    logic jamp;
+    logic branch;
     logic memory;
     logic ordering;
     logic trap;
     logic csr;
   } rice_core_ex_type;
 
-  rice_core_id_result       id_result;
-  rice_core_value           rs1_value;
-  rice_core_value           rs2_value;
-  logic                     flush;
-  rice_core_pc              flush_pc;
-  rice_core_jamp_operation  jamp_condition;
-  rice_core_pc              jamp_pc;
-  logic [XLEN-1:0]          alu_data;
-  logic                     mul_valid;
-  logic                     mul_done;
-  logic [XLEN-1:0]          mul_data;
-  logic                     div_valid;
-  logic                     div_done;
-  logic [XLEN-1:0]          div_data;
-  logic                     memory_access_valid;
-  logic [1:0]               memory_access_done;
-  logic [XLEN-1:0]          memory_access_data;
-  logic                     csr_access_valid;
-  logic                     csr_access_done;
-  logic [XLEN-1:0]          csr_access_data;
-  logic                     csr_access_error;
-  logic                     stall;
-  rice_core_exception       exception;
-  rice_core_ex_type         ex_valid;
-  rice_core_ex_type         ex_done;
-  logic                     ex_result_valid;
-  rice_core_ex_result       ex_result;
-  rice_core_ex_error        ex_error;
+  rice_core_id_result     id_result;
+  logic                   flush;
+  rice_core_pc            flush_pc;
+  logic [XLEN-1:0]        alu_data;
+  rice_core_branch_result branch_result;
+  logic                   mul_valid;
+  logic                   mul_done;
+  logic [XLEN-1:0]        mul_data;
+  logic                   div_valid;
+  logic                   div_done;
+  logic [XLEN-1:0]        div_data;
+  logic                   memory_access_valid;
+  logic [1:0]             memory_access_done;
+  logic [XLEN-1:0]        memory_access_data;
+  logic                   csr_access_valid;
+  logic                   csr_access_done;
+  logic [XLEN-1:0]        csr_access_data;
+  logic                   csr_access_error;
+  logic                   stall;
+  rice_core_exception     exception;
+  rice_core_ex_type       ex_valid;
+  rice_core_ex_type       ex_done;
+  logic                   ex_result_valid;
+  rice_core_ex_result     ex_result;
+  rice_core_ex_error      ex_error;
 
   function automatic logic is_valid_alu_operation(rice_core_id_result id_result);
     return id_result.alu_operation.command != RICE_CORE_ALU_NONE;
@@ -66,8 +63,8 @@ module rice_core_ex_stage
     return id_result.div_operation != '0;
   endfunction
 
-  function automatic logic is_valid_jamp_operation(rice_core_id_result id_result);
-    return id_result.jamp_operation != '0;
+  function automatic logic is_valid_branch_operation(rice_core_id_result id_result);
+    return id_result.branch_operation != '0;
   endfunction
 
   function automatic logic is_valid_memory_access(rice_core_id_result id_result);
@@ -88,8 +85,6 @@ module rice_core_ex_stage
 
   always_comb begin
     id_result = pipeline_if.id_result;
-    rs1_value = id_result.rs1_value;
-    rs2_value = id_result.rs2_value;
   end
 
 //--------------------------------------------------------------
@@ -101,107 +96,54 @@ module rice_core_ex_stage
   end
 
   always_comb begin
-    flush     = get_flush(id_result, jamp_condition, exception);
-    flush_pc  = get_flush_pc(id_result, exception, env_if.trap_pc, env_if.return_pc, jamp_pc);
+    flush     = get_flush(id_result, branch_result, exception);
+    flush_pc  = get_flush_pc(id_result, branch_result, exception, env_if.trap_pc, env_if.return_pc);
   end
 
   always_comb begin
-    jamp_condition  = check_jamp_condition(id_result, alu_data);
-    jamp_pc         = calc_jamp_pc(id_result, rs1_value);
-  end
-
-  always_comb begin
-    ex_valid.jamp     = is_valid_jamp_operation(id_result);
     ex_valid.ordering = is_valid_odering_control(id_result);
     ex_valid.trap     = is_valid_trap_control(id_result);
-    ex_done.jamp      = '1;
     ex_done.ordering  = '1;
     ex_done.trap      = '1;
   end
 
-  always_comb begin
-    ex_error.misaligned_pc  = check_misaligned_pc(jamp_condition, jamp_pc);
-  end
-
   function automatic logic get_flush(
-    rice_core_id_result       id_result,
-    rice_core_jamp_operation  jamp_condition,
-    rice_core_exception       exception
+    rice_core_id_result     id_result,
+    rice_core_branch_result branch_result,
+    rice_core_exception     exception
   );
-    rice_core_ordering_control  ordering;
-    rice_core_trap_control      trap;
-    logic [3:0]                 flush;
-
-    ordering  = id_result.ordering_control;
-    trap      = id_result.trap_control;
-    flush[0]  = jamp_condition != '0;
-    flush[1]  = id_result.valid && ordering.fence_i;
-    flush[2]  = id_result.valid && trap.mret;
-    flush[3]  = exception != '0;
-
-    return flush != '0;
+    logic jamp;
+    logic misprediction;
+    logic fence_i;
+    logic mret;
+    jamp          = branch_result.jamp;
+    misprediction = branch_result.misprediction != '0;
+    fence_i       = id_result.valid && id_result.ordering_control.fence_i;
+    mret          = id_result.valid && id_result.trap_control.mret;
+    return jamp || misprediction || fence_i || mret || (exception != '0);
   endfunction
 
   function automatic rice_core_pc get_flush_pc(
-    rice_core_id_result id_result,
-    rice_core_exception exception,
-    rice_core_pc        trap_pc,
-    rice_core_pc        return_pc,
-    rice_core_pc        jamp_pc
+    rice_core_id_result     id_result,
+    rice_core_branch_result branch_result,
+    rice_core_exception     exception,
+    rice_core_pc            trap_pc,
+    rice_core_pc            return_pc
   );
     rice_core_ordering_control  ordering;
     rice_core_trap_control      trap;
+    logic                       rollback;
 
     ordering  = id_result.ordering_control;
     trap      = id_result.trap_control;
+    rollback  = branch_result.misprediction[0];
     case (1'b1)
-      ordering.fence_i: return id_result.pc + XLEN'(4);
+      ordering.fence_i,
+      rollback:         return id_result.pc + XLEN'(4);
       trap.mret:        return return_pc;
       exception != '0:  return trap_pc;
-      default:          return jamp_pc;
+      default:          return branch_result.target_pc;
     endcase
-  endfunction
-
-  function automatic rice_core_jamp_operation check_jamp_condition(
-    rice_core_id_result id_result,
-    rice_core_value     alu_data
-  );
-    logic                     valid;
-    rice_core_jamp_operation  jamp_operation;
-    rice_core_jamp_operation  jamp_condition;
-
-    valid                   = id_result.valid;
-    jamp_operation          = id_result.jamp_operation;
-    jamp_condition.jal      = valid && jamp_operation.jal;
-    jamp_condition.jalr     = valid && jamp_operation.jalr;
-    jamp_condition.beq_bge  = valid && jamp_operation.beq_bge && (alu_data == '0);
-    jamp_condition.bne_blt  = valid && jamp_operation.bne_blt && (alu_data != '0);
-
-    return jamp_condition;
-  endfunction
-
-  function automatic rice_core_pc calc_jamp_pc(
-    rice_core_id_result id_result,
-    rice_core_value     rs1_value
-  );
-    rice_core_pc  pc;
-
-    if (id_result.jamp_operation.jalr) begin
-      pc  = rs1_value + id_result.imm_value;
-    end
-    else begin
-      pc  = id_result.pc + id_result.imm_value;
-    end
-
-    pc[0] = '0;
-    return pc;
-  endfunction
-
-  function automatic logic check_misaligned_pc(
-    rice_core_jamp_operation  jamp_condition,
-    rice_core_pc              jamp_pc
-  );
-    return (jamp_condition != '0) && (jamp_pc[1:0] != '0);
   endfunction
 
 //--------------------------------------------------------------
@@ -215,13 +157,86 @@ module rice_core_ex_stage
   rice_core_alu #(
     .XLEN (XLEN )
   ) u_alu (
-    .i_pc             (pipeline_if.id_result.pc             ),
-    .i_rs1_value      (rs1_value                            ),
-    .i_rs2_value      (rs2_value                            ),
-    .i_imm_value      (pipeline_if.id_result.imm_value      ),
-    .i_alu_operation  (pipeline_if.id_result.alu_operation  ),
-    .o_result         (alu_data                             )
+    .i_pc             (id_result.pc             ),
+    .i_rs1_value      (id_result.rs1_value      ),
+    .i_rs2_value      (id_result.rs2_value      ),
+    .i_imm_value      (id_result.imm_value      ),
+    .i_alu_operation  (id_result.alu_operation  ),
+    .o_result         (alu_data                 )
   );
+
+//--------------------------------------------------------------
+//  Branch
+//--------------------------------------------------------------
+  always_comb begin
+    pipeline_if.branch_result = branch_result;
+  end
+
+  always_comb begin
+    branch_result = get_branch_result(id_result, alu_data);
+  end
+
+  always_comb begin
+    ex_valid.branch         = is_valid_branch_operation(id_result);
+    ex_done.branch          = '1;
+    ex_error.misaligned_pc  = check_misaligned_pc(branch_result);
+  end
+
+  function automatic rice_core_branch_result get_branch_result(
+    rice_core_id_result id_result,
+    rice_core_value     alu_data
+  );
+    logic                       valid;
+    rice_core_branch_operation  branch_operation;
+    rice_core_bp_result         bp_result;
+    logic                       match_taken;
+    logic                       match_not_taken;
+    rice_core_pc                target_pc;
+    logic [2:0]                 misprediction;
+    rice_core_branch_result     result;
+
+    valid             = id_result.valid;
+    branch_operation  = id_result.branch_operation;
+    bp_result         = id_result.bp_result;
+
+    //  check branch condition
+    match_taken     = (branch_operation.beq_bge && (alu_data == '0)) ||
+                      (branch_operation.bne_blt && (alu_data != '0));
+    match_not_taken = (branch_operation.beq_bge && (alu_data != '0)) ||
+                      (branch_operation.bne_blt && (alu_data == '0));
+
+    //  calc target pc
+    if (branch_operation.jalr) begin
+      target_pc = id_result.rs1_value + id_result.imm_value;
+    end
+    else begin
+      target_pc = id_result.pc + id_result.imm_value;
+    end
+    target_pc[0]  = '0;
+
+    //  evaluate prediction result
+    misprediction[0]  = bp_result.taken && (!match_taken);
+    misprediction[1]  = bp_result.taken && match_taken && (bp_result.target_pc != target_pc);
+    misprediction[2]  = match_taken && (!bp_result.taken);
+
+    result.taken            = valid && match_taken;
+    result.not_taken        = valid && match_not_taken;
+    result.jamp             = valid && (branch_operation.jal || branch_operation.jalr);
+    result.pc               = id_result.pc;
+    result.target_pc        = target_pc;
+    result.misprediction[0] = valid && misprediction[0];
+    result.misprediction[1] = valid && misprediction[1];
+    result.misprediction[2] = valid && misprediction[2];
+    return result;
+  endfunction
+
+  function automatic logic check_misaligned_pc(
+    rice_core_branch_result branch_result
+  );
+    return
+      (branch_result.taken || branch_result.jamp) &&
+      (branch_result.target_pc[1:0] != '0);
+  endfunction
 
 //--------------------------------------------------------------
 //  Multiplier
@@ -241,8 +256,8 @@ module rice_core_ex_stage
     .i_clk            (i_clk                    ),
     .i_rst_n          (i_rst_n                  ),
     .i_valid          (mul_valid                ),
-    .i_rs1_value      (rs1_value                ),
-    .i_rs2_value      (rs2_value                ),
+    .i_rs1_value      (id_result.rs1_value      ),
+    .i_rs2_value      (id_result.rs2_value      ),
     .i_mul_operation  (id_result.mul_operation  ),
     .o_result_valid   (mul_done                 ),
     .o_result         (mul_data                 )
@@ -266,8 +281,8 @@ module rice_core_ex_stage
     .i_clk            (i_clk                    ),
     .i_rst_n          (i_rst_n                  ),
     .i_valid          (div_valid                ),
-    .i_rs1_value      (rs1_value                ),
-    .i_rs2_value      (rs2_value                ),
+    .i_rs1_value      (id_result.rs1_value      ),
+    .i_rs2_value      (id_result.rs2_value      ),
     .i_div_operation  (id_result.div_operation  ),
     .o_result_valid   (div_done                 ),
     .o_result         (div_data                 )
@@ -288,16 +303,16 @@ module rice_core_ex_stage
   rice_core_lsu #(
     .XLEN (XLEN )
   ) u_lsu (
-    .i_clk            (i_clk                                ),
-    .i_rst_n          (i_rst_n                              ),
-    .i_valid          (memory_access_valid                  ),
-    .i_rs1_value      (rs1_value                            ),
-    .i_rs2_value      (rs2_value                            ),
-    .i_imm_value      (pipeline_if.id_result.imm_value      ),
-    .i_memory_access  (pipeline_if.id_result.memory_access  ),
-    .o_access_done    (memory_access_done                   ),
-    .o_read_data      (memory_access_data                   ),
-    .data_bus_if      (data_bus_if                          )
+    .i_clk            (i_clk                    ),
+    .i_rst_n          (i_rst_n                  ),
+    .i_valid          (memory_access_valid      ),
+    .i_rs1_value      (id_result.rs1_value      ),
+    .i_rs2_value      (id_result.rs2_value      ),
+    .i_imm_value      (id_result.imm_value      ),
+    .i_memory_access  (id_result.memory_access  ),
+    .o_access_done    (memory_access_done       ),
+    .o_read_data      (memory_access_data       ),
+    .data_bus_if      (data_bus_if              )
   );
 
 //--------------------------------------------------------------
@@ -323,7 +338,7 @@ module rice_core_ex_stage
     .i_rst_n        (i_rst_n              ),
     .i_valid        (csr_access_valid     ),
     .i_rs1          (id_result.rs1        ),
-    .i_rs1_value    (rs1_value            ),
+    .i_rs1_value    (id_result.rs1_value  ),
     .i_imm_value    (id_result.imm_value  ),
     .i_csr_access   (id_result.csr_access ),
     .o_access_done  (csr_access_done      ),
