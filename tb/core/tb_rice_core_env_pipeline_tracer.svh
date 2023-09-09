@@ -56,6 +56,7 @@ class tb_rice_core_env_pipeline_tracer extends tb_rice_core_env_pipeline_sub_mon
   function void end_wb(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
     add_inst_label(item);
     log_commands.push_back($sformatf("E\t%0d\t%0d\t%s", item.id, 0, "wb"));
+    log_commands.push_back($sformatf("R\t%0d\t%0d\t%0d", item.id, 0, 0));
   endfunction
 
   function void end_monitor_cycle(longint cycles);
