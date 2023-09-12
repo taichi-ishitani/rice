@@ -19,10 +19,6 @@ class tb_rice_core_env_pipeline_tracer extends tb_rice_core_env_pipeline_sub_mon
     log_commands.push_back($sformatf("S\t%0d\t%0d\t%s", item.id, 0, "if"));
   endfunction
 
-  function void end_if(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
-    log_commands.push_back($sformatf("E\t%0d\t%0d\t%s", item.id, 0, "if"));
-  endfunction
-
   function void flush_if(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
     add_inst_label(item);
     log_commands.push_back($sformatf("R\t%0d\t%0d\t%0d", item.id, 0, 1));
@@ -30,10 +26,6 @@ class tb_rice_core_env_pipeline_tracer extends tb_rice_core_env_pipeline_sub_mon
 
   function void start_id(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
     log_commands.push_back($sformatf("S\t%0d\t%0d\t%s", item.id, 0, "id"));
-  endfunction
-
-  function void end_id(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
-    log_commands.push_back($sformatf("E\t%0d\t%0d\t%s", item.id, 0, "id"));
   endfunction
 
   function void flush_id(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
@@ -45,17 +37,12 @@ class tb_rice_core_env_pipeline_tracer extends tb_rice_core_env_pipeline_sub_mon
     log_commands.push_back($sformatf("S\t%0d\t%0d\t%s", item.id, 0, "ex"));
   endfunction
 
-  function void end_ex(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
-    log_commands.push_back($sformatf("E\t%0d\t%0d\t%s", item.id, 0, "ex"));
-  endfunction
-
   function void start_wb(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
     log_commands.push_back($sformatf("S\t%0d\t%0d\t%s", item.id, 0, "wb"));
   endfunction
 
   function void end_wb(longint cycles, tb_rice_core_env_pipeline_monitor_item item);
     add_inst_label(item);
-    log_commands.push_back($sformatf("E\t%0d\t%0d\t%s", item.id, 0, "wb"));
     log_commands.push_back($sformatf("R\t%0d\t%0d\t%0d", item.id, 0, 0));
   endfunction
 
