@@ -11,4 +11,4 @@ RGGEN       := RGGEN_PLUGINS=$(PATH_PLUGIN) rggen --print-backtrace
 generate_rtl: $(CSR_RTL)
 
 %.sv: $(PATH_CSR)/%.rb $(CSR_CONFIGURATION)
-	XLEN=32 $(RGGEN) --enable sv_rtl -c $(PATH_CSR)/rice_csr_xlen32.yaml $<
+	$(RGGEN) --enable sv_rtl -c $(PATH_CSR)/rice_csr_xlen32.yaml $<

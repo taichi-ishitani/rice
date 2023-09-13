@@ -16,155 +16,90 @@ module rice_core_csr_rw_unit
   output  var                       o_error,
   rice_bus_if.master                csr_if
 );
-  typedef enum logic [1:0] {
-    IDLE,
-    DO_WRITE,
-    DO_READ
-  } rice_core_state;
+  localparam  int AW  = RICE_RISCV_CSR_ADDRESS_WIDTH;
 
-  rice_core_state   state;
-  logic             write_only;
-  logic             read_only;
-  logic             request_valid;
-  logic             start_request;
-  logic [XLEN-1:0]  write_data;
-  logic             access_done;
+  logic                         request_done;
+  rice_bus_if #(AW, XLEN, XLEN) bus_if();
 
-//--------------------------------------------------------------
-//  FSM
-//--------------------------------------------------------------
-  always_comb begin
-    case (i_csr_access)
-      RICE_CORE_CSR_ACCESS_RW,
-      RICE_CORE_CSR_ACCESS_RWI: write_only  = '1;
-      RICE_CORE_CSR_ACCESS_RS,
-      RICE_CORE_CSR_ACCESS_RC:  write_only  = i_rs1_value == '1;
-      default:                  write_only  = '0;
-    endcase
-
-    case (i_csr_access)
-      RICE_CORE_CSR_ACCESS_RS,
-      RICE_CORE_CSR_ACCESS_RC:  read_only = i_rs1_value == '0;
-      RICE_CORE_CSR_ACCESS_RSI,
-      RICE_CORE_CSR_ACCESS_RCI: read_only = i_rs1 == '0;
-      default:                  read_only = '0;
-    endcase
-  end
-
+  //  Request
   always_ff @(posedge i_clk, negedge i_rst_n) begin
     if (!i_rst_n) begin
-      state <= IDLE;
+      request_done  <= '0;
     end
-    else begin
-      case (state)
-        IDLE: begin
-          if (i_valid && write_only) begin
-            state <= DO_WRITE;
-          end
-          else if (i_valid) begin
-            state <= DO_READ;
-          end
-        end
-        DO_READ: begin
-          if (csr_if.response_ack()) begin
-            if (read_only || csr_if.error) begin
-              state <= IDLE;
-            end
-            else begin
-              state <= DO_WRITE;
-            end
-          end
-        end
-        DO_WRITE: begin
-          if (csr_if.response_ack()) begin
-            state <= IDLE;
-          end
-        end
-      endcase
+    else if (bus_if.response_ack()) begin
+      request_done  <= '0;
     end
-  end
-
-//--------------------------------------------------------------
-//  Request
-//--------------------------------------------------------------
-  always_comb begin
-    csr_if.request_valid  = request_valid;
-    csr_if.address        = i_imm_value[11:0];
-    csr_if.strobe         = (state == DO_WRITE) ? '1 : '0;
-    csr_if.write_data     = write_data;
+    else if (bus_if.request_ack()) begin
+      request_done  <= '1;
+    end
   end
 
   always_comb begin
-    start_request =
-      ((state == IDLE) && i_valid) ||
-      ((state == DO_READ) && csr_if.response_ack() && (!(csr_if.error || read_only)));
+    bus_if.request_valid  = i_valid && (!request_done);
+    bus_if.address        = i_imm_value[AW-1:0];
+    bus_if.strobe         = get_strobe(i_csr_access, i_rs1, i_rs1_value);
+    bus_if.write_data     = get_write_data(i_csr_access, i_rs1, i_rs1_value);
   end
 
-  always_ff @(posedge i_clk, negedge i_rst_n) begin
-    if (!i_rst_n) begin
-      request_valid <= '0;
-    end
-    else if (csr_if.request_ack()) begin
-      request_valid <= '0;
-    end
-    else if (start_request) begin
-      request_valid <= '1;
-    end
-  end
-
-  always_ff @(posedge i_clk) begin
-    if ((i_valid && write_only) || csr_if.response_ack()) begin
-      write_data  <=
-        get_write_data(
-          i_csr_access, write_only,
-          i_rs1, i_rs1_value, csr_if.read_data
-        );
-    end
-  end
-
-  function automatic logic [XLEN-1:0] get_write_data(
+  function automatic logic [XLEN-1:0] get_strobe(
     rice_core_csr_access  csr_access,
-    logic                 write_only,
     rice_riscv_rs         rs1,
-    logic [XLEN-1:0]      rs1_value,
-    logic [XLEN-1:0]      read_data
+    logic [XLEN-1:0]      rs1_value
   );
-    logic [XLEN-1:0]  data[2];
-
     case (csr_access)
-      RICE_CORE_CSR_ACCESS_RWI,
-      RICE_CORE_CSR_ACCESS_RSI,
-      RICE_CORE_CSR_ACCESS_RCI: data[0] = XLEN'(rs1);
-      default:                  data[0] = rs1_value;
-    endcase
-
-    if (write_only) begin
-      data[1] = '0;
-    end
-    else begin
-      data[1] = read_data;
-    end
-
-    case (csr_access)
-      RICE_CORE_CSR_ACCESS_RC,
-      RICE_CORE_CSR_ACCESS_RCI: return data[1] & (~data[0]);
-      default:                  return data[1] | data[0];
+      RICE_CORE_CSR_ACCESS_RW,
+      RICE_CORE_CSR_ACCESS_RWI: return '1;
+      default:                  return select_data(csr_access, rs1, rs1_value);
     endcase
   endfunction
 
-//--------------------------------------------------------------
-//  Response
-//--------------------------------------------------------------
+  function automatic logic [XLEN-1:0] get_write_data(
+    rice_core_csr_access  csr_access,
+    rice_riscv_rs         rs1,
+    logic [XLEN-1:0]      rs1_value
+  );
+    case (csr_access)
+      RICE_CORE_CSR_ACCESS_RS,
+      RICE_CORE_CSR_ACCESS_RSI: return '1;
+      RICE_CORE_CSR_ACCESS_RC,
+      RICE_CORE_CSR_ACCESS_RCI: return '0;
+      default:                  return select_data(csr_access, rs1, rs1_value);
+    endcase
+  endfunction
+
+  function automatic logic [XLEN-1:0] select_data(
+    rice_core_csr_access  csr_access,
+    rice_riscv_rs         rs1,
+    logic [XLEN-1:0]      rs1_value
+  );
+    case (csr_access)
+      RICE_CORE_CSR_ACCESS_RWI,
+      RICE_CORE_CSR_ACCESS_RSI,
+      RICE_CORE_CSR_ACCESS_RCI: return XLEN'(rs1);
+      default:                  return rs1_value;
+    endcase
+  endfunction
+
+  //  Response
   always_comb begin
-    csr_if.response_ready = (state != IDLE) && (!request_valid);
-    o_access_done         = access_done;
-    o_read_data           = csr_if.read_data;
-    o_error               = csr_if.error;
+    bus_if.response_ready = request_done;
+    o_access_done         = bus_if.response_ack();
+    o_read_data           = bus_if.read_data;
+    o_error               = bus_if.error;
   end
 
-  always_comb begin
-    access_done =
-      csr_if.response_ack() &&
-      (read_only || (state == DO_WRITE) || csr_if.error);
-  end
+  //  Slicer
+  rice_bus_slicer #(
+    .ADDRESS_WIDTH    (AW   ),
+    .DATA_WIDTH       (XLEN ),
+    .STROBE_WIDTH     (XLEN ),
+    .REQUEST_STAGES   (1    ),
+    .RESPONSE_STAGES  (0    ),
+    .FULL_BANDWIDTH   (0    )
+  ) u_bus_slicer (
+    .i_clk      (i_clk    ),
+    .i_rst_n    (i_rst_n  ),
+    .slave_if   (bus_if   ),
+    .master_if  (csr_if   )
+  );
 endmodule

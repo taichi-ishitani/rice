@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 require_relative 'rice_csr_common'
+setup(self)
 
 register_block {
-  name "rice_csr_m_level_xlen#{XLEN}"
-  byte_size BYTE_SIZE
+  name "rice_csr_m_level_xlen#{xlen}"
+  byte_size block_size
 
   #
   # Machine Information Registers
@@ -21,7 +22,7 @@ register_block {
     name 'marchid'
     offset_address byte_address(0xF12)
     bit_field {
-      bit_assignment lsb: 0, width: XLEN; type :rof; initial_value default: 0
+      bit_assignment lsb: 0, width: xlen; type :rof; initial_value default: 0
     }
   }
 
@@ -29,7 +30,7 @@ register_block {
     name 'mimpid'
     offset_address byte_address(0xF13)
     bit_field {
-      bit_assignment lsb: 0, width: XLEN; type :rof; initial_value default: 0
+      bit_assignment lsb: 0, width: xlen; type :rof; initial_value default: 0
     }
   }
 
@@ -37,7 +38,7 @@ register_block {
     name 'mhartid'
     offset_address byte_address(0xF14)
     bit_field {
-      bit_assignment lsb: 0, width: XLEN; type :ro
+      bit_assignment lsb: 0, width: xlen; type :ro
     }
   }
 
@@ -113,14 +114,14 @@ register_block {
     }
     bit_field {
       name 'sd'
-      bit_assignment lsb: XLEN - 1, width: 1; type :rof; initial_value 0
+      bit_assignment lsb: xlen - 1, width: 1; type :rof; initial_value 0
     }
   }
 
   register {
     name 'misa'
     offset_address byte_address(0x301)
-    type :rowi
+    type :rw
     bit_field {
       name 'support_e'
       bit_assignment lsb: 4, width: 1; type :ro; reference 'misa.support_i'
@@ -139,8 +140,8 @@ register_block {
     }
     bit_field {
       name 'mxl'
-      bit_assignment lsb: XLEN - 2, width: 2; type :rof
-      initial_value case XLEN
+      bit_assignment lsb: xlen - 2, width: 2; type :rof
+      initial_value case xlen
                     when 32 then 0b01
                     else 0b00
                     end
@@ -150,7 +151,7 @@ register_block {
   register {
     name 'mie'
     offset_address byte_address(0x304)
-    type :rowi
+    type :rw
     bit_field {
       name 'ssie'
       bit_assignment lsb: 1, width: 1; type :rof; initial_value 0
@@ -186,7 +187,7 @@ register_block {
     }
     bit_field {
       name 'base'
-      bit_assignment lsb: 2, width: XLEN - 2; type :rw; initial_value 0
+      bit_assignment lsb: 2, width: xlen - 2; type :rw; initial_value 0
     }
   }
 
@@ -203,11 +204,11 @@ register_block {
     }
   }
 
-  if XLEN == 32
+  if xlen == 32
     register {
       name 'mstatush'
       offset_address byte_address(0x310)
-      type :rowi
+      type :rw
       bit_field {
         name 'sbe'
         bit_assignment lsb: 4, width: 1; type :rof; initial_value 0
@@ -226,7 +227,7 @@ register_block {
     name 'mscratch'
     offset_address byte_address(0x340)
     bit_field {
-      bit_assignment lsb: 0, width: XLEN; type :rw; initial_value 0
+      bit_assignment lsb: 0, width: xlen; type :rw; initial_value 0
     }
   }
 
@@ -234,7 +235,7 @@ register_block {
     name 'mepc'
     offset_address byte_address(0x341)
     bit_field {
-      bit_assignment lsb: 0, width: XLEN; type :rws; initial_value 0
+      bit_assignment lsb: 0, width: xlen; type :rws; initial_value 0
     }
   }
 
@@ -243,11 +244,11 @@ register_block {
     offset_address byte_address(0x342)
     bit_field {
       name 'exception_code'
-      bit_assignment lsb: 0, width: XLEN - 1; type :rws; initial_value 0
+      bit_assignment lsb: 0, width: xlen - 1; type :rws; initial_value 0
     }
     bit_field {
       name 'interrupt'
-      bit_assignment lsb: XLEN - 1, width: 1; type :rws; initial_value 0
+      bit_assignment lsb: xlen - 1, width: 1; type :rws; initial_value 0
     }
   }
 
@@ -255,7 +256,7 @@ register_block {
     name 'mtval'
     offset_address byte_address(0x343)
     bit_field {
-      bit_assignment lsb: 0, width: XLEN; type :rws; initial_value 0
+      bit_assignment lsb: 0, width: xlen; type :rws; initial_value 0
     }
   }
 
@@ -295,7 +296,7 @@ register_block {
     name 'mcycle'
     offset_address byte_address(0xB00)
     bit_field {
-      bit_assignment lsb: 0, width: XLEN; type :counter; initial_value 0
+      bit_assignment lsb: 0, width: xlen; type :counter; initial_value 0
       reference 'mcountinhibit.cy'
     }
   }
@@ -304,17 +305,17 @@ register_block {
     name 'minstret'
     offset_address byte_address(0xB02)
     bit_field {
-      bit_assignment lsb: 0, width: XLEN; type :counter; initial_value 0
+      bit_assignment lsb: 0, width: xlen; type :counter; initial_value 0
       reference 'mcountinhibit.ir'
     }
   }
 
-  if XLEN == 32
+  if xlen == 32
     register {
       name 'mcycleh'
       offset_address byte_address(0xB80)
       bit_field {
-        bit_assignment lsb: 0, width: XLEN; type :counter; initial_value 0
+        bit_assignment lsb: 0, width: xlen; type :counter; initial_value 0
         reference 'mcountinhibit.cy'
       }
     }
@@ -323,7 +324,7 @@ register_block {
       name 'minstreth'
       offset_address byte_address(0xB82)
       bit_field {
-        bit_assignment lsb: 0, width: XLEN; type :counter; initial_value 0
+        bit_assignment lsb: 0, width: xlen; type :counter; initial_value 0
         reference 'mcountinhibit.ir'
       }
     }

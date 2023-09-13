@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 require_relative 'rice_csr_common'
+setup(self)
 
 register_block {
-  name "rice_csr_u_level_xlen#{XLEN}"
-  byte_size BYTE_SIZE
+  name "rice_csr_u_level_xlen#{xlen}"
+  byte_size block_size
 
   #
   # Unprivileged Counter/Timers
@@ -14,7 +15,7 @@ register_block {
     offset_address byte_address(0xC00)
     type :variable_access
     bit_field {
-      bit_assignment lsb: 0, width: XLEN; type :ro
+      bit_assignment lsb: 0, width: xlen; type :ro
     }
   }
 
@@ -23,17 +24,17 @@ register_block {
     offset_address byte_address(0xC02)
     type :variable_access
     bit_field {
-      bit_assignment lsb: 0, width: XLEN; type :ro
+      bit_assignment lsb: 0, width: xlen; type :ro
     }
   }
 
-  if XLEN == 32
+  if xlen == 32
     register {
       name 'cycleh'
       offset_address byte_address(0xC80)
       type :variable_access
       bit_field {
-        bit_assignment lsb: 0, width: XLEN; type :ro
+        bit_assignment lsb: 0, width: xlen; type :ro
       }
     }
 
@@ -42,7 +43,7 @@ register_block {
       offset_address byte_address(0xC82)
       type :variable_access
       bit_field {
-        bit_assignment lsb: 0, width: XLEN; type :ro
+        bit_assignment lsb: 0, width: xlen; type :ro
       }
     }
   end

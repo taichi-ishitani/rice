@@ -1,5 +1,7 @@
 package rice_riscv_pkg;
-  localparam  int RICE_RISCV_RF_SIZE  = 32;
+  localparam  int RICE_RISCV_RF_SIZE            = 32;
+  localparam  int RICE_RISCV_CSR_SIZE           = 4096;
+  localparam  int RICE_RISCV_CSR_ADDRESS_WIDTH  = $clog2(RICE_RISCV_CSR_SIZE);
 
   typedef enum logic [6:0] {
     RICE_RISCV_OPCODE_LOAD      = 7'b00_000_11,

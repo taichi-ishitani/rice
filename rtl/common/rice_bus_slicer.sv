@@ -1,9 +1,11 @@
 module rice_bus_slicer #(
   parameter int ADDRESS_WIDTH   = 32,
   parameter int DATA_WIDTH      = 32,
+  parameter int STROBE_WIDTH    = DATA_WIDTH / 8,
   parameter int STAGES          = 1,
   parameter int REQUEST_STAGES  = STAGES,
-  parameter int RESPONSE_STAGES = STAGES
+  parameter int RESPONSE_STAGES = STAGES,
+  parameter bit FULL_BANDWIDTH  = 1
 )(
   input var           i_clk,
   input var           i_rst_n,
@@ -12,7 +14,7 @@ module rice_bus_slicer #(
 );
   typedef struct packed {
     logic [ADDRESS_WIDTH-1:0] address;
-    logic [DATA_WIDTH/8-1:0]  strobe;
+    logic [STROBE_WIDTH-1:0]  strobe;
     logic [DATA_WIDTH-1:0]    write_data;
   } rice_bus_request;
 
@@ -45,8 +47,9 @@ module rice_bus_slicer #(
   end
 
   pzbcm_slicer #(
-    .TYPE   (rice_bus_request ),
-    .STAGES (REQUEST_STAGES   )
+    .TYPE           (rice_bus_request ),
+    .STAGES         (REQUEST_STAGES   ),
+    .FULL_BANDWIDTH (FULL_BANDWIDTH   )
   ) u_request_slicer (
     .i_clk    (i_clk            ),
     .i_rst_n  (i_rst_n          ),
@@ -73,8 +76,9 @@ module rice_bus_slicer #(
   end
 
   pzbcm_slicer #(
-    .TYPE   (rice_bus_response  ),
-    .STAGES (RESPONSE_STAGES    )
+    .TYPE           (rice_bus_response  ),
+    .STAGES         (RESPONSE_STAGES    ),
+    .FULL_BANDWIDTH (FULL_BANDWIDTH     )
   ) u_response_slicer (
     .i_clk    (i_clk              ),
     .i_rst_n  (i_rst_n            ),

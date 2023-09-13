@@ -5,13 +5,14 @@ module rice_core (
   rice_bus_if.master  inst_bus_if,
   rice_bus_if.master  data_bus_if
 );
-  localparam  int XLEN  = 32;
+  localparam  int XLEN    = 32;
+  localparam  int CSR_AW  = rice_riscv_pkg::RICE_RISCV_CSR_ADDRESS_WIDTH;
 
-  rice_core_pipeline_if #(XLEN) pipeline_if();
-  rice_bus_if #(XLEN, XLEN)     inst_if();
-  rice_bus_if #(XLEN, XLEN)     data_if();
-  rice_core_env_if #(XLEN)      env_if();
-  rice_bus_if #(12, XLEN)       csr_if();
+  rice_core_pipeline_if #(XLEN)     pipeline_if();
+  rice_bus_if #(XLEN, XLEN)         inst_if();
+  rice_bus_if #(XLEN, XLEN)         data_if();
+  rice_core_env_if #(XLEN)          env_if();
+  rice_bus_if #(CSR_AW, XLEN, XLEN) csr_if();
 
   rice_bus_connector u_isnt_bus_connector (
     .slave_if   (inst_if      ),

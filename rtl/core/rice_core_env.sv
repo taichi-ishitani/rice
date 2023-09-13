@@ -15,6 +15,7 @@ module rice_core_env
   localparam  int EXCEPTION_CODE_WIDTH  = XLEN - 1;
   localparam  int MTVEC_BASE_LSB        = 2;
   localparam  int MTVEC_BASE_WIDTH      = XLEN - MTVEC_BASE_LSB;
+  localparam  int CSR_AW                = RICE_RISCV_CSR_ADDRESS_WIDTH;
 
   rice_core_privilege_level         privilege_level;
   logic                             do_trap;
@@ -40,7 +41,7 @@ module rice_core_env
   logic [1:0]                       minstret_up;
   logic [2*XLEN-1:0]                minstret;
   logic [1:0]                       csr_select;
-  rice_bus_if #(12, XLEN)           csr_demux_if[3]();
+  rice_bus_if #(CSR_AW, XLEN, XLEN) csr_demux_if[3]();
 
 //--------------------------------------------------------------
 //  Privilege level
@@ -171,8 +172,7 @@ module rice_core_env
   );
 
   rice_csr_u_level_xlen32 #(
-    .ERROR_STATUS   (1  ),
-    .INSERT_SLICER  (1  )
+    .ERROR_STATUS (1  )
   ) u_csr_u_level (
     .i_clk                    (i_clk                  ),
     .i_rst_n                  (i_rst_n                ),
@@ -192,8 +192,7 @@ module rice_core_env
   );
 
   rice_csr_m_level_xlen32 #(
-    .ERROR_STATUS   (1  ),
-    .INSERT_SLICER  (1  )
+    .ERROR_STATUS (1  )
   ) u_csr_m_level (
     .i_clk                        (i_clk                  ),
     .i_rst_n                      (i_rst_n                ),

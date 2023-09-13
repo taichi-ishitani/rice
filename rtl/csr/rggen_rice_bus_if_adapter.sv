@@ -20,10 +20,10 @@ module rggen_rice_bus_if_adapter
   localparam  int BYTE_WIDTH  = BUS_WIDTH / 8;
   localparam  int ADDRESS_LSB = $clog2(BYTE_WIDTH);
 
-  logic                                     response_valid;
-  logic [BUS_WIDTH-1:0]                     read_data;
-  logic                                     error;
-  rggen_bus_if #(ADDRESS_WIDTH, BUS_WIDTH)  bus_if();
+  logic                                               response_valid;
+  logic [BUS_WIDTH-1:0]                               read_data;
+  logic                                               error;
+  rggen_bus_if #(ADDRESS_WIDTH, BUS_WIDTH, BUS_WIDTH) bus_if();
 
   //  Request
   always_comb begin
@@ -74,6 +74,7 @@ module rggen_rice_bus_if_adapter
     .ADDRESS_WIDTH        (ADDRESS_WIDTH        ),
     .LOCAL_ADDRESS_WIDTH  (LOCAL_ADDRESS_WIDTH  ),
     .BUS_WIDTH            (BUS_WIDTH            ),
+    .STROBE_WIDTH         (BUS_WIDTH            ),
     .REGISTERS            (REGISTERS            ),
     .PRE_DECODE           (PRE_DECODE           ),
     .BASE_ADDRESS         (BASE_ADDRESS         ),

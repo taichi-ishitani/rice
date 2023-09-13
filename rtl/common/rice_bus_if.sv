@@ -1,9 +1,10 @@
 interface rice_bus_if #(
   parameter int ADDRESS_WIDTH = 32,
-  parameter int DATA_WIDTH    = 32
+  parameter int DATA_WIDTH    = 32,
+  parameter int STROBE_WIDTH  = DATA_WIDTH / 8
 );
   typedef logic [ADDRESS_WIDTH-1:0] rice_bus_address;
-  typedef logic [DATA_WIDTH/8-1:0]  rice_bus_strobe;
+  typedef logic [STROBE_WIDTH-1:0]  rice_bus_strobe;
   typedef logic [DATA_WIDTH-1:0]    rice_bus_data;
 
   logic             request_ready;
