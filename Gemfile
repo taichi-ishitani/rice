@@ -1,2 +1,2 @@
 source 'https://rubygems.org'
-gem 'flgen', '>= 0.14.0'
+gem 'flgen', '>= 0.19.0'

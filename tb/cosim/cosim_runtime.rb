@@ -1,4 +1,4 @@
-if (elf_file = Dir.glob('*.elf')[0])
+if (elf_file = find_file('*.elf', from: :cwd))
   path_sim_binary = env(:PATH_SIM_BINARY)
   path_whisper = env(:PATH_WHISPER)
 

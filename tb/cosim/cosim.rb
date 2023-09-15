@@ -1,6 +1,6 @@
 def parse_params
-  params = File.join(Dir.pwd, 'cosim', 'params.h')
-  if file?(params)
+  params = find_file('cosim/params.h', from: :cwd)
+  if params
     ['k_NumHarts', 'k_XLen', 'k_VLen'].map do |param|
       File.open(params) do |file|
         file
