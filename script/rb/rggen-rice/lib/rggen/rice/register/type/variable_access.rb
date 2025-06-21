@@ -8,15 +8,15 @@ RgGen.define_list_item_feature(:register, :type, :variable_access) do
     readable? { true }
   end
 
-  sv_rtl do
+  veryl do
     build do
       input :write_enable, {
         name: "i_#{full_name}_write_enable", width: 1,
-        array_size: array_size, array_format: array_port_format
+        array_size: array_size
       }
       input :read_enable, {
         name: "i_#{full_name}_read_enable", width: 1,
-        array_size: array_size, array_format: array_port_format
+        array_size: array_size
       }
     end
 

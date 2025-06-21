@@ -1,0 +1,35 @@
+interface rice_core_env_if::<PKG: rice_core_proto_pkg> {
+  import rice_riscv_pkg::rice_riscv_inst;
+  import rice_riscv_pkg::rice_riscv_privilege_level;
+  import PKG::*;
+
+  var privilege_level: rice_riscv_privilege_level;
+  var trap_pc        : rice_core_pc              ;
+  var return_pc      : rice_core_pc              ;
+  var inst_retired   : logic                     ;
+  var exception      : rice_core_exception       ;
+  var exception_any  : logic                     ;
+  var mret           : logic                     ;
+  var pc             : rice_core_pc              ;
+  var inst_bits      : rice_riscv_inst           ;
+
+  modport env {
+    privilege_level: output,
+    trap_pc        : output,
+    return_pc      : output,
+    inst_retired   : input ,
+    exception      : input ,
+    exception_any  : input ,
+    mret           : input ,
+    pc             : input ,
+    inst_bits      : input ,
+  }
+
+  modport ex_stage {
+    ..converse(env)
+  }
+
+  modport monitor {
+    ..input
+  }
+}

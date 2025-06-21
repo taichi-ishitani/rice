@@ -11,13 +11,13 @@ def matcher_definition(op_name, pattern)
     when 'j' then bit_pattern_j_type(pattern)
     end
 
-  opcode = "RICE_RISCV_OPCODE_#{pattern['opcode'].upcase}"
+  opcode = "rice_riscv_opcode::#{pattern['opcode']}"
   bit_pattern = sprintf('25\'b%s', patterns.reverse.join)
 
   sprintf(<<~F, op_name, bit_pattern, opcode)
-    function automatic logic match_%s(rice_riscv_inst inst_bits);
+    function match_%s(inst_bits: input rice_riscv_inst) -> bool {
       return inst_bits ==? {%s, %s};
-    endfunction
+    }
   F
 end
 
@@ -108,7 +108,7 @@ File.open(ARGV[1], 'w') do |f|
       .each_line.map { |l| "  #{l}".sub(/^ +$/, '') }
       .join
 
-  f << 'package rice_riscv_inst_matcher_pkg;' << "\n"
+  f << 'package rice_riscv_inst_matcher_pkg {' << "\n"
   f << package_body
-  f << 'endpackage' << "\n"
+  f << '}' << "\n"
 end

@@ -8,6 +8,7 @@ module tb_rice_bus_slave_bfm (
   always @* begin
     bus_if.request_ready  = bfm_if.request_ready;
     bfm_if.request_valid  = bus_if.request_valid;
+    bfm_if.write          = bus_if.write;
     bfm_if.address        = bus_if.address;
     bfm_if.strobe         = bus_if.strobe;
     bfm_if.write_data     = bus_if.write_data;

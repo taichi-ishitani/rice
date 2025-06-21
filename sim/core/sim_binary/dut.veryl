@@ -1,0 +1,5 @@
+alias package dut_pkg = rice::rice_core_pkg::<32>;
+alias module dut = rice::rice_core::<dut_pkg>;
+alias interface pipeline_if = rice::tb_rice_core_env_pipeline_if::<dut_pkg>;
+alias module inst_checker = rice::tb_rice_core_env_inst_checker::<dut_pkg>;
+alias module pipeline_if_wrapper = rice::tb_rice_core_env_pipeline_if_wrapper::<dut_pkg>;

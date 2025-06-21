@@ -1,0 +1,199 @@
+module rice_core_div::<PKG: rice_core_proto_pkg> (
+  i_clk         : input  clock           ,
+  i_rst         : input  reset           ,
+  i_valid       : input  logic           ,
+  i_rs1_value   : input  rice_core_value ,
+  i_rs2_value   : input  rice_core_value ,
+  i_div_op      : input  rice_core_div_op,
+  o_result_valid: output logic           ,
+  o_result      : output rice_core_value ,
+) {
+  import PKG::*;
+
+  const DIVIDEND_WIDTH: u32       = XLEN + 1;
+  const RESULT_WIDTH  : u32       = 2 * XLEN;
+  const INITIAL_COUNT : u32       = XLEN + 1; // xlen + output
+  const COUNT_WIDTH   : u32       = $clog2(INITIAL_COUNT + 1);
+  const VALUE_MIN     : bit<XLEN> = 1 << (XLEN - 1);
+  const VALUE_MINUS_1 : bit<XLEN> = -1;
+
+  struct rice_core_div_initial_value {
+    count : logic<COUNT_WIDTH> ,
+    result: logic<RESULT_WIDTH>,
+  }
+
+  function is_signed(div_op: input rice_core_div_op) -> bool {
+    return div_op.div || div_op.rem;
+  }
+
+  function modify_sign(
+    div_op : input rice_core_div_op,
+    divided: input rice_core_value ,
+    divisor: input rice_core_value ,
+  ) -> bool {
+    return is_signed(div_op) && (divided[msb] != divisor[msb]);
+  }
+
+  function extend_sign(
+    div_op: input rice_core_div_op,
+    value : input rice_core_value ,
+  ) -> logic<DIVIDEND_WIDTH> {
+    if is_signed(div_op) {
+      return {value[msb], value};
+    } else {
+      return value as DIVIDEND_WIDTH;
+    }
+  }
+
+  function get_initial_value(
+    div_op   : input rice_core_div_op,
+    rs1_value: input rice_core_value ,
+  ) -> rice_core_div_initial_value {
+    var sign_bit      : logic                            ;
+    var match_sign    : logic<XLEN>                      ;
+    var initial_values: rice_core_div_initial_value<XLEN>;
+
+    sign_bit = if is_signed(div_op) ? rs1_value[msb] : 1'b0;
+    for i: u32 in 0..XLEN {
+      if (i + 1) <: XLEN {
+        match_sign[i] = rs1_value[i] == sign_bit;
+      } else {
+        match_sign[i] = rs1_value[i] == sign_bit && rs1_value != VALUE_MIN;
+      }
+    }
+
+    for i: u32 in 0..XLEN {
+      initial_values[XLEN-(i+1)].count               = (INITIAL_COUNT - i) as COUNT_WIDTH;
+      initial_values[XLEN-(i+1)].result[0 step XLEN] = '0;
+      initial_values[XLEN-(i+1)].result[1 step XLEN] = {sign_bit repeat XLEN};
+      initial_values[XLEN-(i+1)].result[i+:XLEN]     = rs1_value;
+    }
+
+    for i: u32 in 1..XLEN {
+      if !match_sign[XLEN-i] {
+        return initial_values[XLEN-i];
+      }
+    }
+
+    return initial_values[0];
+  }
+
+  function do_div(
+    div_op   : input rice_core_div_op   ,
+    rs2_value: input rice_core_value    ,
+    result   : input logic<RESULT_WIDTH>,
+  ) -> logic<RESULT_WIDTH> {
+    var dividend: logic<DIVIDEND_WIDTH>;
+    var a       : logic<DIVIDEND_WIDTH>;
+    var b       : logic<DIVIDEND_WIDTH>;
+    var c       : logic<DIVIDEND_WIDTH>;
+
+    dividend = result[msb-:DIVIDEND_WIDTH];
+    a        = dividend;
+    b        = extend_sign(div_op, rs2_value);
+    if modify_sign(div_op, a as XLEN, b as XLEN) {
+      c = a + b;
+    } else {
+      c = a - b;
+    }
+
+    if need_recovery(a, c) {
+      return {result, 1'b0} as RESULT_WIDTH;
+    } else {
+      return {c, result[0+:RESULT_WIDTH-DIVIDEND_WIDTH], 1'b1} as RESULT_WIDTH;
+    }
+  }
+
+  function need_recovery(
+    dividend: input logic<DIVIDEND_WIDTH>,
+    result  : input logic<DIVIDEND_WIDTH>,
+  ) -> bool {
+    return result[msb] != dividend[msb] && result != 0 as DIVIDEND_WIDTH;
+  }
+
+  function get_result(
+    div_op   : input rice_core_div_op   ,
+    rs1_value: input rice_core_value    ,
+    rs2_value: input rice_core_value    ,
+    result   : input logic<RESULT_WIDTH>,
+  ) -> rice_core_value {
+    var div_zero: bool;
+    var overflow: bool;
+    var mod_sign: bool;
+    var div     : bool;
+    var divu    : bool;
+    var rem     : bool;
+    var remu    : bool;
+
+    div_zero = rs2_value == 0 as XLEN;
+    overflow = is_overflow(div_op, rs1_value, rs2_value);
+    mod_sign = modify_sign(div_op, rs1_value, rs2_value);
+    div      = div_op.div;
+    divu     = div_op.divu;
+    rem      = div_op.rem;
+    remu     = div_op.remu;
+    if div_zero && (div || divu) {
+      return '1;
+    } else if div_zero {
+      return rs1_value;
+    } else if overflow && div {
+      return rs1_value;
+    } else if overflow && rem {
+      return '0;
+    } else if !div_zero && !overflow && (rem || remu) {
+      return result[1 step XLEN];
+    } else if mod_sign {
+      return -result[0 step XLEN];
+    } else {
+      return result[0 step XLEN];
+    }
+  }
+
+  function is_overflow(
+    div_op   : input rice_core_div_op,
+    rs1_value: input rice_core_value ,
+    rs2_value: input rice_core_value ,
+  ) -> bool {
+    return is_signed(div_op) && rs1_value == VALUE_MIN && rs2_value == VALUE_MINUS_1;
+  }
+
+  var initial_value: rice_core_div_initial_value;
+  var count        : logic<COUNT_WIDTH>         ;
+  var start        : logic                      ;
+  var busy         : logic                      ;
+  var finish       : logic                      ;
+  var result       : logic<RESULT_WIDTH>        ;
+
+  always_comb {
+    o_result_valid = finish;
+    o_result       = get_result(i_div_op, i_rs1_value, i_rs2_value, result);
+  }
+
+  always_comb {
+    initial_value = get_initial_value(i_div_op, i_rs1_value);
+  }
+
+  always_comb {
+    start  = i_valid && (count == 0 as COUNT_WIDTH);
+    busy   = count >= 2 as COUNT_WIDTH;
+    finish = count == 1 as COUNT_WIDTH;
+  }
+
+  always_ff {
+    if_reset {
+      count = 0 as COUNT_WIDTH;
+    } else if start {
+      count = initial_value.count;
+    } else if i_valid {
+      count -= 1 as COUNT_WIDTH;
+    }
+  }
+
+  always_ff {
+    if start {
+      result = initial_value.result;
+    } else if busy {
+      result = do_div(i_div_op, i_rs2_value, result);
+    }
+  }
+}

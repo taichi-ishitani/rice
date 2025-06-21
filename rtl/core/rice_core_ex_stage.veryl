@@ -1,0 +1,375 @@
+module rice_core_ex_stage::<PKG: rice_core_proto_pkg> (
+  i_clk      : input   clock                                 ,
+  i_rst      : input   reset                                 ,
+  i_enable   : input   logic                                 ,
+  pipeline_if: modport rice_core_pipeline_if::<PKG>::ex_stage,
+  env_if     : modport rice_core_env_if::<PKG>::ex_stage     ,
+  mem_if     : modport rice_bus_if::master                   ,
+  csr_if     : modport rice_bus_if::master                   ,
+) {
+  import rice_riscv_pkg::*;
+  import PKG::*;
+
+  struct rice_core_ex_flags {
+    alu     : logic,
+    mul     : logic,
+    div     : logic,
+    branch  : logic,
+    mem     : logic,
+    csr     : logic,
+    ordering: logic,
+    trap    : logic,
+  }
+
+  var id_result      : rice_core_id_result    ;
+  var ex_valid       : rice_core_ex_flags     ;
+  var ex_done        : rice_core_ex_flags     ;
+  var ex_error       : rice_core_ex_error     ;
+  var ex_result_valid: logic                  ;
+  var ex_result      : rice_core_ex_result    ;
+  var alu_result     : rice_core_value        ;
+  var branch_result  : rice_core_branch_result;
+  var mul_valid      : logic                  ;
+  var mul_done       : logic                  ;
+  var mul_result     : rice_core_value        ;
+  var div_valid      : logic                  ;
+  var div_done       : logic                  ;
+  var div_result     : rice_core_value        ;
+  var mem_valid      : logic                  ;
+  var mem_done       : logic<2>               ;
+  var mem_result     : rice_core_value        ;
+  var csr_valid      : logic                  ;
+  var csr_done       : logic                  ;
+  var csr_result     : rice_core_value        ;
+  var csr_error      : logic                  ;
+  var stall          : logic                  ;
+  var exception      : rice_core_exception    ;
+  var exception_any  : logic                  ;
+
+
+  always_comb {
+    id_result = pipeline_if.id_result;
+  }
+
+//--------------------------------------------------------------
+//  PC control
+//--------------------------------------------------------------
+  always_comb {
+    pipeline_if.flush    = do_flush(id_result, branch_result, exception_any);
+    pipeline_if.flush_pc = get_flush_pc(id_result, branch_result, exception_any, env_if.trap_pc, env_if.return_pc);
+  }
+
+  always_comb {
+    ex_valid.ordering = id_result.ordering.fence || id_result.ordering.fence_i;
+    ex_valid.trap     = id_result.trap != '0;
+    ex_done.ordering  = '1;
+    ex_done.trap      = '1;
+  }
+
+  function do_flush(
+    id_result    : input rice_core_id_result    ,
+    branch_result: input rice_core_branch_result,
+    exception_any: input logic                  ,
+  ) -> logic {
+    var jamp         : logic;
+    var misprediction: logic;
+    var fence_i      : logic;
+    var mret         : logic;
+    jamp          = branch_result.jamp;
+    misprediction = branch_result.misprediction != '0;
+    fence_i       = id_result.valid && id_result.ordering.fence_i;
+    mret          = id_result.valid && id_result.trap.mret;
+    return jamp || misprediction || fence_i || mret || exception_any;
+  }
+
+  function get_flush_pc(
+    id_result    : input rice_core_id_result    ,
+    branch_result: input rice_core_branch_result,
+    exception_any: input logic                  ,
+    trap_pc      : input rice_core_pc           ,
+    return_pc    : input rice_core_pc           ,
+  ) -> rice_core_pc {
+    var fence_i : logic;
+    var mret    : logic;
+    var rollback: logic;
+
+    fence_i  = id_result.ordering.fence_i;
+    mret     = id_result.trap.mret;
+    rollback = branch_result.misprediction[0];
+    switch {
+      fence_i      ,
+      rollback     : return id_result.pc + (4 as rice_core_pc);
+      mret         : return return_pc;
+      exception_any: return trap_pc;
+      default      : return branch_result.target_pc;
+    }
+  }
+
+//--------------------------------------------------------------
+//  ALU
+//--------------------------------------------------------------
+  always_comb {
+    ex_valid.alu = id_result.alu_op.command != rice_core_alu_command::NONE;
+    ex_done.alu  = '1;
+  }
+
+  inst u_alu: rice_core_alu::<PKG> (
+    i_pc: id_result.pc,
+    i_rs1_value: id_result.rs1_value,
+    i_rs2_value: id_result.rs2_value,
+    i_imm_value: id_result.imm_value,
+    i_alu_op   : id_result.alu_op   ,
+    o_result   : alu_result         ,
+  );
+
+//--------------------------------------------------------------
+//  Branch
+//--------------------------------------------------------------
+  always_comb {
+    pipeline_if.branch_result = branch_result;
+  }
+
+  always_comb {
+    ex_valid.branch        = id_result.branch_op != '0;
+    ex_done.branch         = '1;
+    ex_error.misaligned_pc = check_misaligned_pc(branch_result);
+  }
+
+  always_comb {
+    branch_result = get_branch_result(id_result, alu_result);
+  }
+
+  function get_branch_result(
+    id_result : input rice_core_id_result,
+    alu_result: input rice_core_value    ,
+  ) -> rice_core_branch_result {
+    var valid        : logic                  ;
+    var op           : rice_core_branch_op    ;
+    var bp           : rice_core_bp_result    ;
+    var taken        : logic                  ;
+    var not_taken    : logic                  ;
+    var pc           : rice_core_pc           ;
+    var misprediction: logic<3>               ;
+    var result       : rice_core_branch_result;
+
+    valid = id_result.valid;
+    op    = id_result.branch_op;
+    bp    = id_result.bp_result;
+
+    // check branch condition
+    taken     = (op.beq_bge && (alu_result == '0)) || (op.bne_blt && (alu_result != '0));
+    not_taken = (op.beq_bge && (alu_result != '0)) || (op.bne_blt && (alu_result == '0));
+
+    // calc target pc
+    if op.jalr {
+      pc = id_result.rs1_value + id_result.imm_value;
+    } else {
+      pc = id_result.pc + id_result.imm_value;
+    }
+    pc[0] = 1'b0;
+
+    // evaluate prediction result
+    misprediction[0] = bp.taken && (!taken);
+    misprediction[1] = bp.taken && taken && (bp.target_pc != pc);
+    misprediction[2] = (!bp.taken) && taken;
+
+    result.taken            = valid && taken;
+    result.not_taken        = valid && not_taken;
+    result.jamp             = valid && (op.jal || op.jalr);
+    result.pc               = id_result.pc;
+    result.target_pc        = pc;
+    result.misprediction[0] = valid && misprediction[0];
+    result.misprediction[1] = valid && misprediction[1];
+    result.misprediction[2] = valid && misprediction[2];
+    return result;
+  }
+
+  function check_misaligned_pc(result: input rice_core_branch_result) -> logic {
+    return (result.taken || result.jamp) && result.target_pc[1];
+  }
+
+//--------------------------------------------------------------
+//  Multiplier
+//--------------------------------------------------------------
+  always_comb {
+    ex_valid.mul = id_result.mul_op != '0;
+    ex_done.mul  = mul_done;
+  }
+
+  always_comb {
+    mul_valid  = id_result.valid && ex_valid.mul;
+  }
+
+  inst u_mul: rice_core_mul::<PKG> (
+    i_clk         : i_clk              ,
+    i_rst         : i_rst              ,
+    i_valid       : mul_valid          ,
+    i_rs1_value   : id_result.rs1_value,
+    i_rs2_value   : id_result.rs2_value,
+    i_mul_op      : id_result.mul_op   ,
+    o_result_valid: mul_done           ,
+    o_result      : mul_result         ,
+  );
+
+//--------------------------------------------------------------
+//  Divisor
+//--------------------------------------------------------------
+  always_comb {
+    ex_valid.div = id_result.div_op != '0;
+    ex_done.div  = div_done;
+  }
+
+  always_comb {
+    div_valid  = id_result.valid && ex_valid.div;
+  }
+
+  inst u_div: rice_core_div::<PKG> (
+    i_clk         : i_clk              ,
+    i_rst         : i_rst              ,
+    i_valid       : div_valid          ,
+    i_rs1_value   : id_result.rs1_value,
+    i_rs2_value   : id_result.rs2_value,
+    i_div_op      : id_result.div_op   ,
+    o_result_valid: div_done           ,
+    o_result      : div_result         ,
+  );
+
+//--------------------------------------------------------------
+//  Memory LSU
+//--------------------------------------------------------------
+  always_comb {
+    ex_valid.mem = id_result.mem_access.access_type != rice_core_mem_access_type::NONE;
+    ex_done.mem  = mem_done[0] || mem_done[1];
+  }
+
+  always_comb {
+    mem_valid = id_result.valid && ex_valid.mem;
+  }
+
+  inst u_mem_lsu: rice_core_mem_lsu::<PKG> (
+    i_clk       : i_clk               ,
+    i_rst       : i_rst               ,
+    i_valid     : mem_valid           ,
+    i_rs1_value : id_result.rs1_value ,
+    i_rs2_value : id_result.rs2_value ,
+    i_imm_value : id_result.imm_value ,
+    i_mem_access: id_result.mem_access,
+    o_done      : mem_done            ,
+    o_result    : mem_result          ,
+    mem_if      : mem_if              ,
+  );
+
+//--------------------------------------------------------------
+//  CSR LSU
+//--------------------------------------------------------------
+  always_comb {
+    ex_valid.csr        = id_result.csr_access != rice_core_csr_access::NONE;
+    ex_done.csr         = csr_done;
+    ex_error.csr_access = csr_done && csr_error;
+  }
+
+  always_comb {
+    csr_valid = id_result.valid && ex_valid.csr;
+  }
+
+  inst u_csr_lsu: rice_core_csr_lsu::<PKG> (
+    i_clk       : i_clk               ,
+    i_rst       : i_rst               ,
+    i_valid     : csr_valid           ,
+    i_rs1       : id_result.rs1       ,
+    i_rs1_value : id_result.rs1_value ,
+    i_imm_value : id_result.imm_value ,
+    i_csr_access: id_result.csr_access,
+    o_done      : csr_done            ,
+    o_result    : csr_result          ,
+    o_error     : csr_error           ,
+    csr_if      : csr_if              ,
+  );
+
+//--------------------------------------------------------------
+//  Stall control
+//--------------------------------------------------------------
+  always_comb {
+    pipeline_if.stall = stall;
+  }
+
+  always_comb {
+    stall = id_result.valid && (ex_valid != '0) && ((ex_valid & ex_done) == '0);
+  }
+
+//--------------------------------------------------------------
+//  Env control
+//--------------------------------------------------------------
+  always_comb {
+    env_if.inst_retired  = ex_result_valid && (!stall) && (ex_error == '0);
+    env_if.exception     = exception;
+    env_if.exception_any = exception_any;
+    env_if.mret          = id_result.valid && id_result.trap.mret;
+    env_if.pc            = id_result.pc;
+    env_if.inst_bits     = id_result.inst_bits;
+  }
+
+  always_comb {
+    ex_error.illegal_instruction = id_result.valid && (ex_valid == '0);
+  }
+
+  always_comb {
+    exception     = get_exception(id_result, ex_error, env_if.privilege_level);
+    exception_any = exception != '0;
+  }
+
+  function get_exception(
+    id_result      : input rice_core_id_result       ,
+    ex_error       : input rice_core_ex_error        ,
+    privilege_level: input rice_riscv_privilege_level,
+  ) -> rice_core_exception {
+    var exception: rice_core_exception;
+    var ebreak   : logic              ;
+    var ecall    : logic              ;
+
+    ebreak                                   = id_result.valid && id_result.trap.ebreak;
+    ecall                                    = id_result.valid && id_result.trap.ecall;
+    exception                                = '0;
+    exception.illegal_instruction            = ex_error.illegal_instruction || ex_error.csr_access;
+    exception.breakpoint                     = ebreak;
+    exception.ecall_from_m                   = ecall && (privilege_level == rice_riscv_privilege_level::M);
+    exception.ecall_from_s                   = ecall && (privilege_level == rice_riscv_privilege_level::S);
+    exception.ecall_from_u                   = ecall && (privilege_level == rice_riscv_privilege_level::U);
+    exception.instruction_address_misaligned = ex_error.misaligned_pc;
+
+    return exception;
+  }
+
+//--------------------------------------------------------------
+//  Result
+//--------------------------------------------------------------
+  always_comb {
+    pipeline_if.ex_result = ex_result;
+  }
+
+  always_comb {
+    ex_result_valid =
+      (id_result.valid && ((ex_valid & ex_done) != '0)) || ex_error.illegal_instruction;
+  }
+
+  always_ff {
+    if_reset {
+      ex_result = 0 as rice_core_ex_result;
+    } else if !i_enable {
+      ex_result = 0 as rice_core_ex_result;
+    } else if !stall {
+      ex_result.valid = ex_result_valid;
+      if ex_result_valid {
+        ex_result.error = ex_error;
+        ex_result.rd    = id_result.rd;
+        switch {
+          mul_done   : ex_result.rd_value = mul_result;
+          div_done   : ex_result.rd_value = div_result;
+          mem_done[1]: ex_result.rd_value = mem_result;
+          csr_done   : ex_result.rd_value = csr_result;
+          default    : ex_result.rd_value = alu_result;
+        }
+      }
+    }
+  }
+}

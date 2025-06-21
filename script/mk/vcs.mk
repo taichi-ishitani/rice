@@ -79,10 +79,10 @@ export PATH_SIM_BINARY
 pre_compile_vcs:
 
 compile_vcs:
-	$(MAKE) -C $(PATH_SIM_BINARY) __compile_vcs
+	[ -f $(PATH_SIMV) ] || $(MAKE) -C $(PATH_SIM_BINARY) __compile_vcs
 
-__compile_vcs: pre_compile_vcs flgen_vcs
-	[ -f $(PATH_SIMV) ] || vcs $(VCS_ARGS)
+__compile_vcs: pre_compile_vcs veryl_build flgen_vcs
+	vcs $(VCS_ARGS)
 
 pre_sim_vcs:
 

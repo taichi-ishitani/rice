@@ -9,9 +9,7 @@ package tb_rice_core_env_pkg;
   `include  "uvm_macros.svh"
   `include  "tue_macros.svh"
 
-  typedef virtual tb_rice_core_env_pipeline_monitor_if
-    tb_rice_core_env_pipeline_monitor_vif;
-
+  `include  "tb_rice_core_env_pipeline_if_proxy.svh"
   `include  "tb_rice_core_env_configuration.svh"
   `include  "tb_rice_core_env_status.svh"
   `include  "tb_rice_core_env_pipeline_monitor.svh"

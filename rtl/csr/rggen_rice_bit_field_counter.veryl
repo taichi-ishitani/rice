@@ -1,0 +1,33 @@
+module rggen_rice_bit_field_counter #(
+  param WIDTH        : u32        = 8 ,
+  param INITIAL_VALUE: bit<WIDTH> = '0,
+)(
+  i_clk       : input   clock                               ,
+  i_rst       : input   reset                               ,
+  bit_field_if: modport rggen::rggen_bit_field_if::bit_field,
+  i_disable   : input   logic                               ,
+  i_up        : input   logic                               ,
+  o_count     : output  logic<WIDTH>                        ,
+) {
+  var count: logic<WIDTH>;
+
+  always_comb {
+    bit_field_if.read_data = count;
+    bit_field_if.value     = count;
+    o_count                = count;
+  }
+
+  always_ff {
+    if_reset {
+      count = INITIAL_VALUE;
+    } else if bit_field_if.write_valid {
+      for i: u32 in 0..WIDTH {
+        if bit_field_if.mask[i] {
+          count[i] = bit_field_if.write_data[i];
+        }
+      }
+    } else if i_up && (!i_disable) {
+      count += 1 as WIDTH;
+    }
+  }
+}

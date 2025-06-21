@@ -1,7 +1,7 @@
 class tb_rice_core_env_context extends tb_rice_env_context_base;
-  tb_rice_bus_vif                       inst_bus_vif;
-  tb_rice_bus_vif                       data_bus_vif;
-  tb_rice_core_env_pipeline_monitor_vif pipeline_monitor_vif;
+  tb_rice_bus_vif                         inst_bus_vif;
+  tb_rice_bus_vif                         data_bus_vif;
+  tb_rice_core_env_pipeline_if_proxy_base pipeline_if;
   `tue_object_default_constructor(tb_rice_core_env_context)
   `uvm_object_utils(tb_rice_core_env_context)
 endclass

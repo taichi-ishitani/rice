@@ -1,0 +1,45 @@
+import rggen::rggen_rtl_pkg::*;
+
+module rggen_rice_register_variable_access #(
+  param ADDRESS_WIDTH : u32                  = 8        ,
+  param OFFSET_ADDRESS: logic<ADDRESS_WIDTH> = 0        ,
+  param BUS_WIDTH     : u32                  = 32       ,
+  param DATA_WIDTH    : u32                  = BUS_WIDTH,
+  param VALUE_WIDTH   : u32                  = BUS_WIDTH,
+  param VALID_BITS    : bit<DATA_WIDTH>     = '1        ,
+)(
+  i_clk         : input   clock                              ,
+  i_rst         : input   reset                              ,
+  i_write_enable: input   logic                              ,
+  i_read_enable : input   logic                              ,
+  register_if   : modport rggen::rggen_register_if::register ,
+  bit_field_if  : modport rggen::rggen_bit_field_if::register,
+) {
+  var access_match: logic;
+
+  always_comb {
+    if register_if.access == rggen_access::READ {
+      access_match = i_read_enable;
+    } else {
+      access_match = i_write_enable;
+    }
+  }
+
+  inst u_register_common: rggen::rggen_register_common #(
+    READABLE            : true          ,
+    WRITABLE            : true          ,
+    ADDRESS_WIDTH       : ADDRESS_WIDTH ,
+    OFFSET_ADDRESS      : OFFSET_ADDRESS,
+    BUS_WIDTH           : BUS_WIDTH     ,
+    DATA_WIDTH          : DATA_WIDTH    ,
+    VALUE_WIDTH         : VALUE_WIDTH   ,
+    VALID_BITS          : VALID_BITS    ,
+    USE_ADDITIONAL_MATCH: true          ,
+  )(
+    i_clk             : i_clk       ,
+    i_rst             : i_rst       ,
+    register_if       : register_if ,
+    i_additional_match: access_match,
+    bit_field_if      : bit_field_if,
+  );
+}

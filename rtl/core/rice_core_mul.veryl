@@ -1,0 +1,177 @@
+module rice_core_mul::<PKG: rice_core_proto_pkg, PARALLELISM: u32 = 4> (
+  i_clk         : input  clock           ,
+  i_rst         : input  reset           ,
+  i_valid       : input  logic           ,
+  i_rs1_value   : input  rice_core_value ,
+  i_rs2_value   : input  rice_core_value ,
+  i_mul_op      : input  rice_core_mul_op,
+  o_result_valid: output logic           ,
+  o_result      : output rice_core_value ,
+) {
+  import PKG::*;
+
+  const SUB_MUL_WIDTH: u32 = XLEN / PARALLELISM;
+  const MUL_FF_WIDTH : u32 = SUB_MUL_WIDTH + 1;
+  const MUL_WIDTH    : u32 = SUB_MUL_WIDTH + 2; // +2 is for sign
+  const SUM_WIDTH    : u32 = XLEN + 2;          // +2 is for x2 and sign
+  const PRODUCT_WIDTH: u32 = SUM_WIDTH + MUL_WIDTH;
+  const RESULT_WIDTH : u32 = PRODUCT_WIDTH + MUL_WIDTH + (SUB_MUL_WIDTH * (PARALLELISM - 1));
+  const TOTAL_CYCLES : u32 = (MUL_WIDTH / 2) + 1;
+  const COUNT_WIDTH  : u32 = $clog2(TOTAL_CYCLES + 1);
+
+  function is_rd_high(mul_op: input rice_core_mul_op) -> bool {
+    return !mul_op.mul;
+  }
+
+  function is_rs1_signed(mul_op: input rice_core_mul_op) -> bool {
+    return mul_op.mulh || mul_op.mulhsu;
+  }
+
+  function is_rs2_signed(mul_op: input rice_core_mul_op) -> bool {
+    return mul_op.mulh;
+  }
+
+  function calc_product(
+    mul_op    : input rice_core_mul_op    ,
+    rs1_value : input rice_core_value     ,
+    multiplier: input logic<MUL_FF_WIDTH> ,
+    product   : input logic<PRODUCT_WIDTH>,
+  ) -> logic<PRODUCT_WIDTH> {
+    var rs1_signed  : bool                ;
+    var a           : logic<SUM_WIDTH>    ;
+    var b           : logic<SUM_WIDTH>    ;
+    var c           : logic<SUM_WIDTH>    ;
+    var product_next: logic<PRODUCT_WIDTH>;
+
+    rs1_signed = is_rs1_signed(mul_op);
+    a          = product[msb-:SUM_WIDTH];
+    case {rs1_signed, multiplier[2:0]} {
+      4'b0011,
+      4'b0100: b = {rs1_value, 1'b0} as SUM_WIDTH;
+      4'b0x01,
+      4'b0x10: b = rs1_value as SUM_WIDTH;
+      4'b1011,
+      4'b1100: b = {rs1_value[msb], rs1_value, 1'b0} as SUM_WIDTH;
+      4'b1x01,
+      4'b1x10: b = {rs1_value[msb], rs1_value[msb], rs1_value} as SUM_WIDTH;
+      default: b = 0 as SUM_WIDTH;
+    }
+
+    if multiplier[2] {
+      c = a - b;
+    } else {
+      c = a + b;
+    }
+
+    product_next = {c, product[0+:MUL_WIDTH]};
+    return {product_next[msb], product_next[msb], product_next[msb:2]};
+  }
+
+  var count  : logic<COUNT_WIDTH>               ;
+  var start  : logic                            ;
+  var last   : logic                            ;
+  var product: logic<PARALLELISM, PRODUCT_WIDTH>;
+  var result : signed logic<RESULT_WIDTH>       ;
+
+  always_comb {
+    o_result_valid = last;
+    if is_rd_high(i_mul_op) {
+      o_result = result[1 step XLEN];
+    } else {
+      o_result = result[0 step XLEN];
+    }
+  }
+
+  always_comb {
+    start = i_valid && (count == (0 as COUNT_WIDTH));
+    last  = i_valid && (count == (1 as COUNT_WIDTH));
+  }
+
+  always_ff {
+    if_reset {
+      count = 0 as COUNT_WIDTH;
+    } else if start {
+      count = (TOTAL_CYCLES - 1) as COUNT_WIDTH;
+    } else if i_valid {
+      count -= 1 as COUNT_WIDTH;
+    }
+  }
+
+  for i in 0..PARALLELISM: g_product {
+    var multiplier   : logic<2, MUL_FF_WIDTH>;
+    var product_latch: logic<PRODUCT_WIDTH>  ;
+
+    always_comb {
+      if start {
+        multiplier[0] = {i_rs2_value[i step SUB_MUL_WIDTH], 1'b0};
+      } else {
+        multiplier[0] = multiplier[1];
+      }
+    }
+
+    if (i + 1) == PARALLELISM: g {
+      always_ff {
+        if i_valid {
+          if is_rs2_signed(i_mul_op) {
+            multiplier[1] = {multiplier[0][msb] repeat 2, multiplier[0][msb:2]};
+          } else {
+            multiplier[1] = {2'b00, multiplier[0][msb:2]};
+          }
+        }
+      }
+    } else {
+      always_ff {
+        if i_valid {
+          multiplier[1] = {2'b00, multiplier[0][msb:2]};
+        }
+      }
+    }
+
+    always_comb {
+      if start {
+        product[i] = 0 as PRODUCT_WIDTH;
+      } else {
+        product[i] = product_latch;
+      }
+    }
+
+    always_ff {
+      if i_valid {
+        product_latch =
+          calc_product(i_mul_op, i_rs1_value, multiplier[0], product[i]);
+      }
+    }
+  }
+
+  if PARALLELISM == 1: g_result {
+    always_comb {
+      result = product[0];
+    }
+  } else if PARALLELISM == 2 {
+    always_comb {
+      result =
+        ({product[0][msb] repeat (RESULT_WIDTH - (1 * SUB_MUL_WIDTH)), product[0]                                 }) as RESULT_WIDTH +
+        ({product[1][msb] repeat (RESULT_WIDTH - (2 * SUB_MUL_WIDTH)), product[1], 1'b0 repeat (1 * SUB_MUL_WIDTH)}) as RESULT_WIDTH;
+    }
+  } else if PARALLELISM == 4 {
+    always_comb {
+      result =
+        ({product[0][msb] repeat (RESULT_WIDTH - (1 * SUB_MUL_WIDTH)), product[0]                                 }) as RESULT_WIDTH +
+        ({product[1][msb] repeat (RESULT_WIDTH - (2 * SUB_MUL_WIDTH)), product[1], 1'b0 repeat (1 * SUB_MUL_WIDTH)}) as RESULT_WIDTH +
+        ({product[2][msb] repeat (RESULT_WIDTH - (3 * SUB_MUL_WIDTH)), product[2], 1'b0 repeat (2 * SUB_MUL_WIDTH)}) as RESULT_WIDTH +
+        ({product[3][msb] repeat (RESULT_WIDTH - (4 * SUB_MUL_WIDTH)), product[3], 1'b0 repeat (3 * SUB_MUL_WIDTH)}) as RESULT_WIDTH;
+    }
+  } else if PARALLELISM == 8 {
+    always_comb {
+      result =
+        ({product[0][msb] repeat (RESULT_WIDTH - (1 * SUB_MUL_WIDTH)), product[0]                                 }) as RESULT_WIDTH +
+        ({product[1][msb] repeat (RESULT_WIDTH - (2 * SUB_MUL_WIDTH)), product[1], 1'b0 repeat (1 * SUB_MUL_WIDTH)}) as RESULT_WIDTH +
+        ({product[2][msb] repeat (RESULT_WIDTH - (3 * SUB_MUL_WIDTH)), product[2], 1'b0 repeat (2 * SUB_MUL_WIDTH)}) as RESULT_WIDTH +
+        ({product[3][msb] repeat (RESULT_WIDTH - (4 * SUB_MUL_WIDTH)), product[3], 1'b0 repeat (3 * SUB_MUL_WIDTH)}) as RESULT_WIDTH +
+        ({product[4][msb] repeat (RESULT_WIDTH - (5 * SUB_MUL_WIDTH)), product[4], 1'b0 repeat (4 * SUB_MUL_WIDTH)}) as RESULT_WIDTH +
+        ({product[5][msb] repeat (RESULT_WIDTH - (6 * SUB_MUL_WIDTH)), product[5], 1'b0 repeat (5 * SUB_MUL_WIDTH)}) as RESULT_WIDTH +
+        ({product[6][msb] repeat (RESULT_WIDTH - (7 * SUB_MUL_WIDTH)), product[6], 1'b0 repeat (6 * SUB_MUL_WIDTH)}) as RESULT_WIDTH +
+        ({product[7][msb] repeat (RESULT_WIDTH - (8 * SUB_MUL_WIDTH)), product[7], 1'b0 repeat (7 * SUB_MUL_WIDTH)}) as RESULT_WIDTH;
+    }
+  }
+}

@@ -1,11 +1,11 @@
-rggen_rice_bit_field_counter #(
-  .WIDTH          (<%= width %>),
-  .INITIAL_VALUE  (<%= initial_value %>)
-) u_bit_field (
-  .i_clk        (<%= clock %>),
-  .i_rst_n      (<%= reset %>),
-  .bit_field_if (<%= bit_field_if %>),
-  .i_disable    (<%= disable_signal %>),
-  .i_up         (<%= up[loop_variables] %>),
-  .o_count      (<%= count[loop_variables] %>)
+inst u_bit_field: rggen_rice_bit_field_counter #(
+  WIDTH        : <%= width %>,
+  INITIAL_VALUE: <%= initial_value %>
+)(
+  i_clk       : <%= clock %>,
+  i_rst       : <%= reset %>,
+  bit_field_if: <%= bit_field_if %>,
+  i_disable   : <%= disable_signal %>,
+  i_up        : <%= up[loop_variables] %>,
+  o_count     : <%= count[loop_variables] %>
 );

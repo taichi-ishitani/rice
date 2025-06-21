@@ -12,9 +12,17 @@ RgGen.define_list_item_feature(:register_block, :protocol, :rice_bus_if) do
   end
 
   sv_rtl do
+    build {}
+  end
+
+  veryl do
     build do
-      interface_port :csr_if, {
-        name: 'csr_if', interface_type: 'rice_bus_if', modport: 'slave'
+      input :previprivilege_level, {
+        name: 'i_privilege_level', width: 2
+      }
+      modport :csr_if, {
+        name: 'csr_if',
+        interface_type: 'rice_bus_if', modport: 'slave'
       }
     end
 

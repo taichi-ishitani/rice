@@ -1,0 +1,227 @@
+package rice_riscv_inst_matcher_pkg {
+  import  rice_riscv_pkg::*;
+
+  function match_lui(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxxxxxxxxxx, rice_riscv_opcode::LUI};
+  }
+
+  function match_auipc(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxxxxxxxxxx, rice_riscv_opcode::AUIPC};
+  }
+
+  function match_jal(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxxxxxxxxxx, rice_riscv_opcode::JAL};
+  }
+
+  function match_jalr(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx000xxxxx, rice_riscv_opcode::JALR};
+  }
+
+  function match_beq(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx000xxxxx, rice_riscv_opcode::BRANCH};
+  }
+
+  function match_bne(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx001xxxxx, rice_riscv_opcode::BRANCH};
+  }
+
+  function match_blt(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx100xxxxx, rice_riscv_opcode::BRANCH};
+  }
+
+  function match_bge(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx101xxxxx, rice_riscv_opcode::BRANCH};
+  }
+
+  function match_bltu(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx110xxxxx, rice_riscv_opcode::BRANCH};
+  }
+
+  function match_bgeu(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx111xxxxx, rice_riscv_opcode::BRANCH};
+  }
+
+  function match_lb(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx000xxxxx, rice_riscv_opcode::LOAD};
+  }
+
+  function match_lh(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx001xxxxx, rice_riscv_opcode::LOAD};
+  }
+
+  function match_lw(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx010xxxxx, rice_riscv_opcode::LOAD};
+  }
+
+  function match_lbu(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx100xxxxx, rice_riscv_opcode::LOAD};
+  }
+
+  function match_lhu(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx101xxxxx, rice_riscv_opcode::LOAD};
+  }
+
+  function match_sb(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx000xxxxx, rice_riscv_opcode::STORE};
+  }
+
+  function match_sh(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx001xxxxx, rice_riscv_opcode::STORE};
+  }
+
+  function match_sw(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx010xxxxx, rice_riscv_opcode::STORE};
+  }
+
+  function match_addi(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx000xxxxx, rice_riscv_opcode::OP_IMM};
+  }
+
+  function match_slti(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx010xxxxx, rice_riscv_opcode::OP_IMM};
+  }
+
+  function match_sltiu(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx011xxxxx, rice_riscv_opcode::OP_IMM};
+  }
+
+  function match_xori(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx100xxxxx, rice_riscv_opcode::OP_IMM};
+  }
+
+  function match_ori(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx110xxxxx, rice_riscv_opcode::OP_IMM};
+  }
+
+  function match_andi(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx111xxxxx, rice_riscv_opcode::OP_IMM};
+  }
+
+  function match_slli(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b000000xxxxxxxxxxx001xxxxx, rice_riscv_opcode::OP_IMM};
+  }
+
+  function match_srli(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b000000xxxxxxxxxxx101xxxxx, rice_riscv_opcode::OP_IMM};
+  }
+
+  function match_srai(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b010000xxxxxxxxxxx101xxxxx, rice_riscv_opcode::OP_IMM};
+  }
+
+  function match_add(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000000xxxxxxxxxx000xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_sub(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0100000xxxxxxxxxx000xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_sll(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000000xxxxxxxxxx001xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_slt(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000000xxxxxxxxxx010xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_sltu(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000000xxxxxxxxxx011xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_xor(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000000xxxxxxxxxx100xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_srl(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000000xxxxxxxxxx101xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_sra(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0100000xxxxxxxxxx101xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_or(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000000xxxxxxxxxx110xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_and(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000000xxxxxxxxxx111xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_fence(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000xxxxxxxx0000000000000, rice_riscv_opcode::MISC_MEM};
+  }
+
+  function match_fence_i(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx001xxxxx, rice_riscv_opcode::MISC_MEM};
+  }
+
+  function match_ecall(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000000000000000000000000, rice_riscv_opcode::SYSTEM};
+  }
+
+  function match_ebreak(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000000000010000000000000, rice_riscv_opcode::SYSTEM};
+  }
+
+  function match_mret(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0011000000100000000000000, rice_riscv_opcode::SYSTEM};
+  }
+
+  function match_csrrw(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx001xxxxx, rice_riscv_opcode::SYSTEM};
+  }
+
+  function match_csrrs(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx010xxxxx, rice_riscv_opcode::SYSTEM};
+  }
+
+  function match_csrrc(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx011xxxxx, rice_riscv_opcode::SYSTEM};
+  }
+
+  function match_csrrwi(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx101xxxxx, rice_riscv_opcode::SYSTEM};
+  }
+
+  function match_csrrsi(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx110xxxxx, rice_riscv_opcode::SYSTEM};
+  }
+
+  function match_csrrci(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'bxxxxxxxxxxxxxxxxx111xxxxx, rice_riscv_opcode::SYSTEM};
+  }
+
+  function match_mul(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000001xxxxxxxxxx000xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_mulh(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000001xxxxxxxxxx001xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_mulhsu(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000001xxxxxxxxxx010xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_mulhu(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000001xxxxxxxxxx011xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_div(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000001xxxxxxxxxx100xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_divu(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000001xxxxxxxxxx101xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_rem(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000001xxxxxxxxxx110xxxxx, rice_riscv_opcode::OP};
+  }
+
+  function match_remu(inst_bits: input rice_riscv_inst) -> bool {
+    return inst_bits ==? {25'b0000001xxxxxxxxxx111xxxxx, rice_riscv_opcode::OP};
+  }
+}

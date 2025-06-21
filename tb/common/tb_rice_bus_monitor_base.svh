@@ -55,6 +55,7 @@ class tb_rice_bus_monitor_base #(
 
   protected virtual function void sample_request(tb_rice_bus_item item);
     item.address  = vif.monitor_cb.address;
+    item.write    = vif.monitor_cb.write;
     item.strobe   = vif.monitor_cb.strobe;
     if (item.is_write()) begin
       item.data = vif.monitor_cb.write_data;
