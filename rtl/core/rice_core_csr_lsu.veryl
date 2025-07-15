@@ -1,0 +1,100 @@
+module rice_core_csr_lsu::<PKG: rice_core_proto_pkg> (
+  i_clk       : input   clock               ,
+  i_rst       : input   reset               ,
+  i_valid     : input   logic               ,
+  i_rs1       : input   rice_riscv_rs       ,
+  i_rs1_value : input   rice_core_value     ,
+  i_imm_value : input   rice_core_value     ,
+  i_csr_access: input   rice_core_csr_access,
+  o_done      : output  logic               ,
+  o_result    : output  rice_core_value     ,
+  o_error     : output  logic               ,
+  csr_if      : modport rice_bus_if::master ,
+) {
+  import PKG::*;
+  import rice_riscv_pkg::rice_riscv_rs;
+  import rice_riscv_pkg::CSR_ADDRESS_WIDTH;
+
+  inst bus_if: rice_bus_if #(ADDRESS_WIDTH: CSR_ADDRESS_WIDTH, DATA_WIDTH: XLEN, STROBE_WIDTH: XLEN);
+  inst u_slicer: rice_bus_slicer #(
+    ADDRESS_WIDTH  : CSR_ADDRESS_WIDTH,
+    DATA_WIDTH     : XLEN             ,
+    STROBE_WIDTH   : XLEN             ,
+    REQUEST_STAGES : 1                ,
+    RESPONSE_STAGES: 0                ,
+    FULL_BANDWIDTH : false            ,
+  ) (
+    i_clk    : i_clk ,
+    i_rst    : i_rst ,
+    slave_if : bus_if,
+    master_if: csr_if,
+  );
+
+//--------------------------------------------------------------
+//  Request
+//--------------------------------------------------------------
+  var request_done: logic;
+
+  always_comb {
+    bus_if.request_valid = i_valid && (!request_done);
+    bus_if.write         = get_write(i_csr_access, i_rs1);
+    bus_if.address       = i_imm_value as CSR_ADDRESS_WIDTH;
+    case i_csr_access {
+      rice_core_csr_access::RW: {
+        bus_if.strobe     = '1;
+        bus_if.write_data = i_rs1_value;
+      }
+      rice_core_csr_access::RWI: {
+        bus_if.strobe     = '1;
+        bus_if.write_data = i_rs1 as XLEN;
+      }
+      rice_core_csr_access::RS: {
+        bus_if.strobe     = i_rs1_value;
+        bus_if.write_data = '1;
+      }
+      rice_core_csr_access::RSI: {
+        bus_if.strobe     = i_rs1 as XLEN;
+        bus_if.write_data = '1;
+      }
+      rice_core_csr_access::RC: {
+        bus_if.strobe     = i_rs1_value;
+        bus_if.write_data = '0;
+      }
+      default: {
+        bus_if.strobe     = i_rs1 as XLEN;
+        bus_if.write_data = '0;
+      }
+    }
+  }
+
+  always_ff {
+    if_reset {
+      request_done = '0;
+    } else if bus_if.response_ack() {
+      request_done = '0;
+    } else if bus_if.request_ack() {
+      request_done = '1;
+    }
+  }
+
+  function get_write(
+    csr_access: input rice_core_csr_access,
+    rs1       : input rice_riscv_rs       ,
+  ) -> logic {
+    return
+      inside csr_access {rice_core_csr_access::RW, rice_core_csr_access::RWI} || (rs1 != '0);
+  }
+
+//--------------------------------------------------------------
+//  Request
+//--------------------------------------------------------------
+  always_comb {
+    o_done   = bus_if.response_ack();
+    o_result = bus_if.read_data;
+    o_error  = bus_if.error;
+  }
+
+  always_comb {
+    bus_if.response_ready = request_done;
+  }
+}

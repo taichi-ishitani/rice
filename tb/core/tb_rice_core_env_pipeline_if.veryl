@@ -1,0 +1,41 @@
+#[allow(unused_variable)]
+pub interface tb_rice_core_env_pipeline_if::<PKG: rice_core_proto_pkg> {
+  import PKG::*;
+
+  var clk: clock;
+  var rst: reset;
+
+  var inst_request_valid  : logic;
+  var inst_request_ack    : logic;
+  var inst_request_address: logic<XLEN>;
+  var inst_request_issued : logic;
+  var if_valid            : logic;
+  var if_result           : rice_core_if_result;
+  var id_valid            : logic;
+  var id_result           : rice_core_id_result;
+  var ex_valid            : logic;
+  var ex_result           : rice_core_ex_result;
+  var wb_valid            : logic;
+  var flush               : logic;
+
+  function xlen() -> u32 {
+    return XLEN;
+  }
+
+  embed (inline) sv{{{
+    clocking cb @(posedge clk);
+      input inst_request_valid;
+      input inst_request_ack;
+      input inst_request_address;
+      input inst_request_issued;
+      input if_valid;
+      input if_result;
+      input id_valid;
+      input id_result;
+      input ex_valid;
+      input ex_result;
+      input wb_valid;
+      input flush;
+    endclocking
+  }}}
+}

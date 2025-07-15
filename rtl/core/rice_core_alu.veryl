@@ -1,0 +1,104 @@
+module rice_core_alu::<PKG: rice_core_proto_pkg> (
+  i_pc       : input  rice_core_pc    ,
+  i_rs1_value: input  rice_core_value ,
+  i_rs2_value: input  rice_core_value ,
+  i_imm_value: input  rice_core_value ,
+  i_alu_op   : input  rice_core_alu_op,
+  o_result   : output rice_core_value ,
+) {
+  import PKG::*;
+
+  var a: rice_core_value;
+  var b: rice_core_value;
+
+  always_comb {
+    case i_alu_op.a {
+      rice_core_alu_source::RS: a = i_rs1_value;
+      rice_core_alu_source::PC: a = i_pc;
+      default                 : a = 0 as rice_core_value;
+    }
+
+    case i_alu_op.b {
+      rice_core_alu_source::RS   : b = i_rs2_value;
+      rice_core_alu_source::IMM  : b = i_imm_value;
+      rice_core_alu_source::IMM_4: b = 4 as rice_core_value;
+      default                    : b = 0 as rice_core_value;
+    }
+
+    case i_alu_op.command {
+      rice_core_alu_command::SRA,
+      rice_core_alu_command::SRL,
+      rice_core_alu_command::SLL: o_result = do_shift(i_alu_op.command, a, b);
+      rice_core_alu_command::AND: o_result = a & b;
+      rice_core_alu_command::OR : o_result = a | b;
+      rice_core_alu_command::XOR: o_result = a ^ b;
+      rice_core_alu_command::LT ,
+      rice_core_alu_command::LTU: o_result = do_lt(i_alu_op.command, a, b);
+      rice_core_alu_command::SUB: o_result = a - b;
+      default                   : o_result = a + b;
+    }
+  }
+
+  function do_shift(
+    command: input rice_core_alu_command,
+    a      : input rice_core_value      ,
+    b      : input rice_core_value      ,
+  ) -> rice_core_value {
+    var data  : logic<2*XLEN>       ;
+    var result: PKG::rice_core_value;
+
+    case command {
+      rice_core_alu_command::SLL: {
+        data[1*XLEN+:XLEN] = '0;
+        data[0*XLEN+:XLEN] = bit_reverse(a);
+      }
+      rice_core_alu_command::SRL: {
+        data[1*XLEN+:XLEN] = '0;
+        data[0*XLEN+:XLEN] = a;
+      }
+      default: {
+        data[1*XLEN+:XLEN] = {a[XLEN-1] repeat XLEN};
+        data[0*XLEN+:XLEN] = a;
+      }
+    }
+
+    if XLEN == 32 {
+      result = data[(b as 5)+:XLEN];
+    } else {
+      result = data[(b as 6)+:XLEN];
+    }
+
+    if command == rice_core_alu_command::SLL {
+      return bit_reverse(result);
+    } else {
+      return result;
+    }
+  }
+
+  function bit_reverse(value: input rice_core_value) -> rice_core_value {
+    var result: rice_core_value;
+    for i: u32 in 0..XLEN {
+      result[i] = value[XLEN-i-1];
+    }
+    return result;
+  }
+
+  function do_lt(
+    command: input rice_core_alu_command,
+    a      : input rice_core_value      ,
+    b      : input rice_core_value      ,
+  ) -> rice_core_value {
+    var lhs: signed logic<XLEN+1>;
+    var rhs: signed logic<XLEN+1>;
+
+    if command == rice_core_alu_command::LT {
+      lhs = {a[XLEN-1], a};
+      rhs = {b[XLEN-1], b};
+    } else {
+      lhs = {1'b0, a};
+      rhs = {1'b0, b};
+    }
+
+    return (lhs <: rhs) as rice_core_value;
+  }
+}

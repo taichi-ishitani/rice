@@ -1,0 +1,69 @@
+pub module tb_rice_core_env_pipeline_if_wrapper::<PKG: rice_core_proto_pkg> (
+  i_clk      : input   clock                                ,
+  i_rst      : input   reset                                ,
+  inst_bus_if: modport rice_bus_if::monitor                 ,
+  pipeline_if: modport rice_core_pipeline_if::<PKG>::monitor,
+) {
+  var inst_request_issued: logic;
+  var if_valid           : logic;
+  var id_valid           : logic;
+  var ex_valid           : logic;
+  var wb_valid           : logic;
+  var flush              : logic;
+
+  always_ff {
+    if_reset {
+      inst_request_issued = 0;
+    } else if inst_bus_if.request_ack() {
+      inst_request_issued = 0;
+    } else if !inst_request_issued {
+      inst_request_issued = inst_bus_if.request_valid;
+    }
+  }
+
+  always_comb {
+    if_valid = pipeline_if.if_result.valid && (!pipeline_if.stall);
+  }
+
+  always_ff {
+    if_reset {
+      id_valid = 0;
+      ex_valid = 0;
+      wb_valid = 0;
+      flush    = 0;
+    } else {
+      id_valid = pipeline_if.if_result.valid && (!pipeline_if.stall) && (!pipeline_if.flush);
+      ex_valid = pipeline_if.id_result.valid && (!pipeline_if.stall);
+      wb_valid = ex_valid;
+      flush    = pipeline_if.flush;
+    }
+  }
+
+  inst monitor_if: tb_rice_core_env_pipeline_if::<PKG>;
+
+  always_comb {
+    monitor_if.clk = i_clk;
+    monitor_if.rst = i_rst;
+  }
+
+  always_comb {
+    monitor_if.inst_request_valid   = inst_bus_if.request_valid;
+    monitor_if.inst_request_ack     = inst_bus_if.request_ack();
+    monitor_if.inst_request_address = inst_bus_if.address;
+    monitor_if.inst_request_issued  = inst_request_issued;
+  }
+
+  always_comb {
+    monitor_if.id_result = pipeline_if.id_result;
+    monitor_if.if_result = pipeline_if.if_result;
+    monitor_if.ex_result = pipeline_if.ex_result;
+  }
+
+  always_comb {
+    monitor_if.if_valid = if_valid;
+    monitor_if.id_valid = id_valid;
+    monitor_if.ex_valid = ex_valid;
+    monitor_if.wb_valid = wb_valid;
+    monitor_if.flush    = flush;
+  }
+}

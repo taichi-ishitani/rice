@@ -1,0 +1,43 @@
+pub interface rice_core_pipeline_if::<PKG: rice_core_proto_pkg> {
+  import rice_riscv_pkg::*;
+  import PKG::*;
+
+  var if_result    : rice_core_if_result;
+  var id_result    : rice_core_id_result;
+  var ex_result    : rice_core_ex_result;
+  var stall        : logic;
+  var flush        : logic;
+  var flush_pc     : rice_core_pc;
+  var branch_result: rice_core_branch_result;
+  var rf           : rice_core_value[RF_SIZE];
+
+  modport if_stage {
+    stall        : input ,
+    flush        : input ,
+    flush_pc     : input ,
+    branch_result: input ,
+    if_result    : output,
+  }
+
+  modport id_stage {
+    stall    : input ,
+    flush    : input ,
+    if_result: input ,
+    id_result: output,
+    ex_result: input ,
+    rf       : output,
+  }
+
+  modport ex_stage {
+    id_result    : input ,
+    ex_result    : output,
+    stall        : output,
+    flush        : output,
+    flush_pc     : output,
+    branch_result: output,
+  }
+
+  modport monitor {
+    ..input
+  }
+}

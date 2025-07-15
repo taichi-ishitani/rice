@@ -17,6 +17,7 @@ VERBOSITY        ?= UVM_LOW
 TIMEOUT          ?= 1_000_000
 ERROR_COUNT      ?= 1
 
+-include $(PATH_SCRIPT)/mk/veryl.mk
 -include $(PATH_SCRIPT)/mk/flgen.mk
 -include $(PATH_SCRIPT)/mk/vcs.mk
 
@@ -26,6 +27,8 @@ CLEAN += *.log
 
 clean:
 	rm -rf $(CLEAN)
-ifneq ($(abspath $(PATH_SIM_BINARY)), $(CURDIR))
+ifeq ($(abspath $(PATH_SIM_BINARY)), $(CURDIR))
+	$(MAKE) veryl_clean
+else
 	[ ! -d $(PATH_SIM_BINARY) ] || $(MAKE) -C $(PATH_SIM_BINARY) clean
 endif

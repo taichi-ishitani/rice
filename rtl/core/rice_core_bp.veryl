@@ -1,0 +1,123 @@
+module rice_core_bp::<
+  PKG        : rice_core_proto_pkg      ,
+  PHT_ENTRIES: u32                 = 128,
+  BTB_ENTRIES: u32                 = 128,
+> (
+  i_clk          : input  clock                  ,
+  i_rst          : input  reset                  ,
+  i_enable       : input  logic                  ,
+  i_branch_result: input  rice_core_branch_result,
+  i_pc           : input  rice_core_pc           ,
+  o_bp_result    : output rice_core_bp_result    ,
+) {
+  import PKG::*;
+
+  const PHT_INDEX_WIDTH: u32 = $clog2(PHT_ENTRIES);
+  const BTB_INDEX_WIDTH: u32 = $clog2(BTB_ENTRIES);
+  const BTB_TAG_WIDTH  : u32 = XLEN - BTB_INDEX_WIDTH - 2;
+
+  type rice_core_pht_entry = logic<2>;
+
+  struct rice_core_btb_entry {
+    valid    : logic               ,
+    tag      : logic<BTB_TAG_WIDTH>,
+    target_pc: rice_core_pc        ,
+  }
+
+  const PHT_3: rice_core_pht_entry = 3;
+  const PHT_2: rice_core_pht_entry = 2;
+  const PHT_1: rice_core_pht_entry = 1;
+  const PHT_0: rice_core_pht_entry = 0;
+
+  var enable   : bool                            ;
+  var pht      : rice_core_pht_entry<PHT_ENTRIES>;
+  var pht_index: logic<2, PHT_INDEX_WIDTH>       ;
+  var btb      : rice_core_btb_entry<BTB_ENTRIES>;
+  var btb_index: logic<2, BTB_INDEX_WIDTH>       ;
+
+  always_comb {
+    enable = i_enable;
+  }
+
+//--------------------------------------------------------------
+//  Pattern history table
+//--------------------------------------------------------------
+  always_comb {
+    pht_index[0] = i_pc[2+:PHT_INDEX_WIDTH];
+    pht_index[1] = i_branch_result.pc[2+:PHT_INDEX_WIDTH];
+  }
+
+  always_ff {
+    if_reset {
+      pht = '{ default: 0 as rice_core_pht_entry };
+    } else if !enable {
+      pht = '{ default: 0 as rice_core_pht_entry };
+    } else if i_branch_result.taken || i_branch_result.not_taken {
+      for i: u32 in 0..PHT_ENTRIES {
+        if (i as PHT_INDEX_WIDTH) == pht_index[1] {
+          pht[i] = update_pht(i_branch_result, pht[i]);
+          break;
+        }
+      }
+    }
+  }
+
+  function update_pht(
+    branch_result: input rice_core_branch_result,
+    pht_entry    : input rice_core_pht_entry    ,
+  ) -> rice_core_pht_entry {
+    if branch_result.taken && (pht_entry != PHT_3) {
+      return pht_entry + PHT_1;
+    } else if branch_result.not_taken && (pht_entry != PHT_0) {
+      return pht_entry - PHT_1;
+    } else {
+      return pht_entry;
+    }
+  }
+
+//--------------------------------------------------------------
+//  Branch target buffer
+//--------------------------------------------------------------
+  always_comb {
+    btb_index[0] = i_pc[2+:BTB_INDEX_WIDTH];
+    btb_index[1] = i_branch_result.pc[2+:BTB_INDEX_WIDTH];
+  }
+
+  always_ff {
+    if_reset {
+      btb = '{ default: 0 as rice_core_btb_entry };
+    } else if !enable {
+      btb = '{ default: 0 as rice_core_btb_entry };
+    } else if i_branch_result.taken {
+      for i: u32 in 0..BTB_ENTRIES {
+        if (i as BTB_INDEX_WIDTH) == btb_index[1] {
+          btb[i].valid     = '1;
+          btb[i].tag       = i_branch_result.pc[msb-:BTB_TAG_WIDTH];
+          btb[i].target_pc = i_branch_result.target_pc;
+        }
+      }
+    }
+  }
+
+//--------------------------------------------------------------
+//  Prediction
+//--------------------------------------------------------------
+  always_comb {
+    o_bp_result = get_bp_result(i_pc, pht[pht_index[0]], btb[btb_index[0]]);
+  }
+
+  function get_bp_result(
+    pc       : input rice_core_pc       ,
+    pht_entry: input rice_core_pht_entry,
+    btb_entry: input rice_core_btb_entry,
+  ) -> rice_core_bp_result {
+    var result: rice_core_bp_result ;
+    var tag   : logic<BTB_TAG_WIDTH>;
+
+    tag              = pc[msb-:BTB_TAG_WIDTH];
+    result.taken     = btb_entry.valid && (btb_entry.tag == tag) && (pht_entry >= PHT_2);
+    result.target_pc = btb_entry.target_pc;
+
+    return result;
+  }
+}

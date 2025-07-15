@@ -1,0 +1,33 @@
+module rice_core_register_file::<PKG: rice_core_proto_pkg> #(
+  const RF_SIZE: u32 = rice_riscv_pkg::RF_SIZE,
+)(
+  i_clk      : input  clock                        ,
+  i_ex_result: input  PKG::rice_core_ex_result     ,
+  o_rf       : output PKG::rice_core_value[RF_SIZE],
+) {
+  var rf          : PKG::rice_core_value[RF_SIZE];
+  var write_enable: logic                        ;
+
+  always_comb {
+    for i: u32 in 0..RF_SIZE {
+      if i == 0 {
+        o_rf[i] = 0 as PKG::rice_core_value;
+      } else {
+        o_rf[i] = rf[i];
+      }
+    }
+  }
+
+  always_comb {
+    write_enable =
+      i_ex_result.valid
+      && (i_ex_result.rd != 0 as rice_riscv_pkg::rice_riscv_rd)
+      && (i_ex_result.error == '0);
+  }
+
+  always_ff {
+    if write_enable {
+      rf[i_ex_result.rd] = i_ex_result.rd_value;
+    }
+  }
+}

@@ -1,0 +1,19 @@
+[project]
+name       = "rice"
+version    = "0.1.0"
+authors    = ["Taichi Ishitani <taichi730@gmail.com>"]
+license    = "Apache-2.0"
+repository = "https://github.com/taichi-ishitani/rice"
+
+[format]
+indent_width  = 2
+
+[build]
+sources = ["rtl", "tb"]
+
+[publish]
+bump_commit    = true
+publish_commit = true
+
+[dependencies]
+"rggen" = { github = "rggen/rggen-veryl-rtl", version = "0.5.0" }

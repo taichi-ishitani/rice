@@ -1,0 +1,79 @@
+interface rice_bus_if #(
+  param ADDRESS_WIDTH: u32 = 32            ,
+  param DATA_WIDTH   : u32 = 32            ,
+  param STROBE_WIDTH : u32 = DATA_WIDTH / 8,
+) {
+  var request_ready : logic               ;
+  var request_valid : logic               ;
+  var write         : logic               ;
+  var address       : logic<ADDRESS_WIDTH>;
+  var strobe        : logic<STROBE_WIDTH> ;
+  var write_data    : logic<DATA_WIDTH>   ;
+  var response_ready: logic               ;
+  var response_valid: logic               ;
+  var read_data     : logic<DATA_WIDTH>   ;
+  var error         : logic               ;
+
+  function request_ack() -> logic {
+    return request_ready && request_valid;
+  }
+
+  function read_request_valid() -> logic {
+    return request_valid && (!write);
+  }
+
+  function read_request_ack() -> logic {
+    return request_ready && request_valid && (!write);
+  }
+
+  function write_request_valid() -> logic {
+    return request_valid && write;
+  }
+
+  function write_request_ack() -> logic {
+    return request_ready && request_valid && write;
+  }
+
+  function response_ack() -> logic {
+    return response_ready && response_valid;
+  }
+
+  modport master {
+    request_ready      : input ,
+    request_valid      : output,
+    write              : output,
+    address            : output,
+    strobe             : output,
+    write_data         : output,
+    response_ready     : output,
+    response_valid     : input ,
+    read_data          : input ,
+    error              : input ,
+    request_ack        : import,
+    read_request_valid : import,
+    read_request_ack   : import,
+    write_request_valid: import,
+    write_request_ack  : import,
+    response_ack       : import,
+  }
+
+  modport slave {
+    request_ack        : import,
+    read_request_valid : import,
+    read_request_ack   : import,
+    write_request_valid: import,
+    write_request_ack  : import,
+    response_ack       : import,
+    ..converse(master)
+  }
+
+  modport monitor {
+    request_ack        : import,
+    read_request_valid : import,
+    read_request_ack   : import,
+    write_request_valid: import,
+    write_request_ack  : import,
+    response_ack       : import,
+    ..input
+  }
+}

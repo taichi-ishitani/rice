@@ -1,6 +1,6 @@
 {
   "xlen": 32,
-  "isa": "rv32im",
+  "isa": "rv32imu",
   "reset_vec": "0x80000000",
   "csr": {
     "misa": {

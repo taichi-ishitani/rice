@@ -8,6 +8,7 @@ interface tb_rice_bus_if (
 
   logic                     request_ready;
   logic                     request_valid;
+  logic                     write;
   logic [ADDRESS_WIDTH-1:0] address;
   logic [STROBE_WIDTH-1:0]  strobe;
   logic [DATA_WIDTH-1:0]    write_data;
@@ -19,6 +20,7 @@ interface tb_rice_bus_if (
   clocking master_cb @(posedge i_clk, negedge i_rst_n);
     input   request_ready;
     output  request_valid;
+    output  write;
     output  address;
     output  strobe;
     output  write_data;
@@ -31,6 +33,7 @@ interface tb_rice_bus_if (
   clocking slave_cb @(posedge i_clk, negedge i_rst_n);
     output  request_ready;
     input   request_valid;
+    input   write;
     input   address;
     input   strobe;
     input   write_data;
@@ -43,6 +46,7 @@ interface tb_rice_bus_if (
   clocking monitor_cb @(posedge i_clk, negedge i_rst_n);
     input request_ready;
     input request_valid;
+    input write;
     input address;
     input strobe;
     input write_data;

@@ -1,0 +1,345 @@
+pub proto package rice_core_proto_pkg {
+  import rice_riscv_pkg::*;
+
+  const XLEN: u32;
+
+  type rice_core_value = logic<XLEN>;
+  type rice_core_pc    = logic<XLEN>;
+
+  enum rice_core_alu_command {
+    NONE,
+    ADD ,
+    SUB ,
+    LT  ,
+    LTU ,
+    XOR ,
+    OR  ,
+    AND ,
+    SLL ,
+    SRL ,
+    SRA ,
+  }
+
+  enum rice_core_alu_source {
+    IMM_0,
+    IMM_4,
+    IMM  ,
+    RS   ,
+    PC   ,
+  }
+
+  struct rice_core_alu_op {
+    command: rice_core_alu_command,
+    a      : rice_core_alu_source ,
+    b      : rice_core_alu_source ,
+  }
+
+  struct rice_core_mul_op {
+    mul   : logic,
+    mulh  : logic,
+    mulhsu: logic,
+    mulhu : logic,
+  }
+
+  struct rice_core_div_op {
+    div : logic,
+    divu: logic,
+    rem : logic,
+    remu: logic,
+  }
+
+  struct rice_core_branch_op {
+    jal    : logic,
+    jalr   : logic,
+    beq_bge: logic,
+    bne_blt: logic,
+  }
+
+  enum rice_core_mem_access_type {
+    NONE ,
+    STORE,
+    LOAD ,
+  }
+
+  enum rice_core_mem_access_mode {
+    B  = 3'b000,
+    BU = 3'b100,
+    H  = 3'b001,
+    HU = 3'b101,
+    W  = 3'b010,
+  }
+
+  struct rice_core_mem_access {
+    access_type: rice_core_mem_access_type,
+    access_mode: rice_core_mem_access_mode,
+  }
+
+  enum rice_core_csr_access {
+    NONE = 3'b000,
+    RW   = 3'b001,
+    RWI  = 3'b101,
+    RS   = 3'b010,
+    RSI  = 3'b110,
+    RC   = 3'b011,
+    RCI  = 3'b111,
+  }
+
+  struct rice_core_ordering_control {
+    pred   : logic<4>,
+    succ   : logic<4>,
+    fence  : logic   ,
+    fence_i: logic   ,
+  }
+
+  struct rice_core_trap_control {
+    ebreak: logic,
+    ecall : logic,
+    mret  : logic,
+  }
+
+  struct rice_core_ex_error {
+    illegal_instruction: logic,
+    misaligned_pc      : logic,
+    csr_access         : logic,
+  }
+
+  struct rice_core_exception {
+    store_amo_page_fault          : logic,
+    laod_page_fault               : logic,
+    instruction_page_fault        : logic,
+    ecall_from_m                  : logic,
+    reserved__                    : logic,
+    ecall_from_s                  : logic,
+    ecall_from_u                  : logic,
+    store_amo_access_fault        : logic,
+    store_amo_address_misaligned  : logic,
+    load_access_fault             : logic,
+    load_address_misaligned       : logic,
+    breakpoint                    : logic,
+    illegal_instruction           : logic,
+    instruction_access_fault      : logic,
+    instruction_address_misaligned: logic,
+  }
+
+  struct rice_core_bp_result {
+    taken    : logic       ,
+    target_pc: rice_core_pc,
+  }
+
+  struct rice_core_branch_result {
+    taken    :     logic       ,
+    not_taken:     logic       ,
+    jamp     :     logic       ,
+    pc       :     rice_core_pc,
+    target_pc:     rice_core_pc,
+    misprediction: logic<3>    ,
+  }
+
+  struct rice_core_if_result {
+    valid    : logic              ,
+    pc       : rice_core_pc       ,
+    inst_bits: rice_riscv_inst    ,
+    bp_result: rice_core_bp_result,
+  }
+
+  struct rice_core_id_result {
+    valid     : logic                     ,
+    pc        : rice_core_pc              ,
+    inst_bits : rice_riscv_inst           ,
+    rs1       : rice_riscv_rs             ,
+    rs2       : rice_riscv_rs             ,
+    rd        : rice_riscv_rd             ,
+    rs1_value : rice_core_value           ,
+    rs2_value : rice_core_value           ,
+    imm_value : rice_core_value           ,
+    alu_op    : rice_core_alu_op          ,
+    mul_op    : rice_core_mul_op          ,
+    div_op    : rice_core_div_op          ,
+    branch_op : rice_core_branch_op       ,
+    mem_access: rice_core_mem_access      ,
+    csr_access: rice_core_csr_access      ,
+    ordering  : rice_core_ordering_control,
+    trap      : rice_core_trap_control    ,
+    bp_result : rice_core_bp_result       ,
+  }
+
+  struct rice_core_ex_result {
+    valid   : logic             ,
+    error   : rice_core_ex_error,
+    rd      : rice_riscv_rd     ,
+    rd_value: rice_core_value   ,
+  }
+}
+
+pub package rice_core_pkg::<LEN: u32> for rice_core_proto_pkg {
+  import rice_riscv_pkg::*;
+
+  const XLEN: u32 = LEN;
+
+  type rice_core_value = logic<XLEN>;
+  type rice_core_pc    = logic<XLEN>;
+
+  enum rice_core_alu_command {
+    NONE,
+    ADD ,
+    SUB ,
+    LT  ,
+    LTU ,
+    XOR ,
+    OR  ,
+    AND ,
+    SLL ,
+    SRL ,
+    SRA ,
+  }
+
+  enum rice_core_alu_source {
+    IMM_0,
+    IMM_4,
+    IMM  ,
+    RS   ,
+    PC   ,
+  }
+
+  struct rice_core_alu_op {
+    command: rice_core_alu_command,
+    a      : rice_core_alu_source ,
+    b      : rice_core_alu_source ,
+  }
+
+  struct rice_core_mul_op {
+    mul   : logic,
+    mulh  : logic,
+    mulhsu: logic,
+    mulhu : logic,
+  }
+
+  struct rice_core_div_op {
+    div : logic,
+    divu: logic,
+    rem : logic,
+    remu: logic,
+  }
+
+  struct rice_core_branch_op {
+    jal    : logic,
+    jalr   : logic,
+    beq_bge: logic,
+    bne_blt: logic,
+  }
+
+  enum rice_core_mem_access_type {
+    NONE ,
+    STORE,
+    LOAD ,
+  }
+
+  enum rice_core_mem_access_mode {
+    B  = 3'b000,
+    BU = 3'b100,
+    H  = 3'b001,
+    HU = 3'b101,
+    W  = 3'b010,
+  }
+
+  struct rice_core_mem_access {
+    access_type: rice_core_mem_access_type,
+    access_mode: rice_core_mem_access_mode,
+  }
+
+  enum rice_core_csr_access {
+    NONE = 3'b000,
+    RW   = 3'b001,
+    RWI  = 3'b101,
+    RS   = 3'b010,
+    RSI  = 3'b110,
+    RC   = 3'b011,
+    RCI  = 3'b111,
+  }
+
+  struct rice_core_ordering_control {
+    pred   : logic<4>,
+    succ   : logic<4>,
+    fence  : logic   ,
+    fence_i: logic   ,
+  }
+
+  struct rice_core_trap_control {
+    ebreak: logic,
+    ecall : logic,
+    mret  : logic,
+  }
+
+  struct rice_core_ex_error {
+    illegal_instruction: logic,
+    misaligned_pc      : logic,
+    csr_access         : logic,
+  }
+
+  struct rice_core_exception {
+    store_amo_page_fault          : logic,
+    laod_page_fault               : logic,
+    instruction_page_fault        : logic,
+    ecall_from_m                  : logic,
+    reserved__                    : logic,
+    ecall_from_s                  : logic,
+    ecall_from_u                  : logic,
+    store_amo_access_fault        : logic,
+    store_amo_address_misaligned  : logic,
+    load_access_fault             : logic,
+    load_address_misaligned       : logic,
+    breakpoint                    : logic,
+    illegal_instruction           : logic,
+    instruction_access_fault      : logic,
+    instruction_address_misaligned: logic,
+  }
+
+  struct rice_core_bp_result {
+    taken    : logic       ,
+    target_pc: rice_core_pc,
+  }
+
+  struct rice_core_branch_result {
+    taken        : logic       ,
+    not_taken    : logic       ,
+    jamp         : logic       ,
+    pc           : rice_core_pc,
+    target_pc    : rice_core_pc,
+    misprediction: logic<3>    ,
+  }
+
+  struct rice_core_if_result {
+    valid    : logic              ,
+    pc       : rice_core_pc       ,
+    inst_bits: rice_riscv_inst    ,
+    bp_result: rice_core_bp_result,
+  }
+
+  struct rice_core_id_result {
+    valid     : logic                     ,
+    pc        : rice_core_pc              ,
+    inst_bits : rice_riscv_inst           ,
+    rs1       : rice_riscv_rs             ,
+    rs2       : rice_riscv_rs             ,
+    rd        : rice_riscv_rd             ,
+    rs1_value : rice_core_value           ,
+    rs2_value : rice_core_value           ,
+    imm_value : rice_core_value           ,
+    alu_op    : rice_core_alu_op          ,
+    mul_op    : rice_core_mul_op          ,
+    div_op    : rice_core_div_op          ,
+    branch_op : rice_core_branch_op       ,
+    mem_access: rice_core_mem_access      ,
+    csr_access: rice_core_csr_access      ,
+    ordering  : rice_core_ordering_control,
+    trap      : rice_core_trap_control    ,
+    bp_result : rice_core_bp_result       ,
+  }
+
+  struct rice_core_ex_result {
+    valid   : logic             ,
+    error   : rice_core_ex_error,
+    rd      : rice_riscv_rd     ,
+    rd_value: rice_core_value   ,
+  }
+}

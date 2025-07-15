@@ -1,0 +1,53 @@
+module rice_core_forwarding::<PKG: rice_core_proto_pkg> (
+  i_clk      : input  clock                   ,
+  i_rst      : input  reset                   ,
+  i_enable   : input  logic                   ,
+  i_stall    : input  logic                   ,
+  i_id_result: input  PKG::rice_core_id_result,
+  i_ex_result: input  PKG::rice_core_ex_result,
+  o_id_result: output PKG::rice_core_id_result,
+) {
+  var wb_result: PKG::rice_core_ex_result;
+
+  function get_rs_value(
+    rs       : input rice_riscv_pkg::rice_riscv_rs,
+    rs_value : input PKG::rice_core_value         ,
+    wb_result: input PKG::rice_core_ex_result     ,
+    ex_result: input PKG::rice_core_ex_result     ,
+  ) -> PKG::rice_core_value {
+    var fw_ex: logic;
+    var fw_wb: logic;
+
+    fw_ex =
+      ex_result.valid
+        && (ex_result.error == '0)
+        && (rs == ex_result.rd)
+        && (rs != 0 as rice_riscv_pkg::rice_riscv_rs);
+    fw_wb =
+      wb_result.valid
+        && (wb_result.error == '0)
+        && (rs == wb_result.rd)
+        && (rs != 0 as rice_riscv_pkg::rice_riscv_rs);
+    switch {
+      fw_ex  : return ex_result.rd_value;
+      fw_wb  : return wb_result.rd_value;
+      default: return rs_value;
+    }
+  }
+
+  always_ff {
+    if_reset {
+      wb_result = 0 as PKG::rice_core_ex_result;
+    } else if !i_enable {
+      wb_result = 0 as PKG::rice_core_ex_result;
+    } else if !i_stall {
+      wb_result = i_ex_result;
+    }
+  }
+
+  always_comb {
+    o_id_result           = i_id_result;
+    o_id_result.rs1_value = get_rs_value(i_id_result.rs1, i_id_result.rs1_value, wb_result, i_ex_result);
+    o_id_result.rs2_value = get_rs_value(i_id_result.rs2, i_id_result.rs2_value, wb_result, i_ex_result);
+  }
+}

@@ -1,0 +1,278 @@
+module rice_core_mem_lsu::<PKG: rice_core_proto_pkg> (
+  i_clk       : input   clock               ,
+  i_rst       : input   reset               ,
+  i_valid     : input   logic               ,
+  i_rs1_value : input   rice_core_value     ,
+  i_rs2_value : input   rice_core_value     ,
+  i_imm_value : input   rice_core_value     ,
+  i_mem_access: input   rice_core_mem_access,
+  o_done      : output  logic<2>            ,
+  o_result    : output  rice_core_value     ,
+  mem_if      : modport rice_bus_if::master ,
+) {
+  import PKG::*;
+
+  enum rice_core_state {
+    IDLE         ,
+    DO_1ST_ACCESS,
+    DO_2ND_ACCESS,
+    WAIT_FOR_DONE,
+  }
+
+  const BYTE_SIZE   : u32 = XLEN / 8;
+  const OFFSET_WIDTH: u32 = $clog2(BYTE_SIZE);
+  const STROBE_WIDTH: u32 = BYTE_SIZE;
+
+  var address        : logic<XLEN>        ;
+  var offset         : logic<OFFSET_WIDTH>;
+  var single_access  : bool               ;
+  var request_state  : rice_core_state    ;
+  var write_done     : logic              ;
+  var response_state : rice_core_state    ;
+  var read_data      : logic<2 * XLEN>    ;
+  var read_data_1st  : logic<XLEN>        ;
+  var read_done      : logic              ;
+
+  inst bus_if: rice_bus_if #(ADDRESS_WIDTH: XLEN, DATA_WIDTH: XLEN);
+  inst u_slicer: rice_bus_slicer #(
+    ADDRESS_WIDTH  : XLEN,
+    DATA_WIDTH     : XLEN,
+    REQUEST_STAGES : 1   ,
+    RESPONSE_STAGES: 0   ,
+  ) (
+    i_clk    : i_clk ,
+    i_rst    : i_rst ,
+    slave_if : bus_if,
+    master_if: mem_if,
+  );
+
+  always_comb {
+    address       = i_rs1_value + i_imm_value;
+    offset        = address[0+:OFFSET_WIDTH];
+    single_access = is_single_access(offset, i_mem_access);
+  }
+
+  function is_single_access(
+    offset    : input logic<OFFSET_WIDTH> ,
+    mem_access: input rice_core_mem_access,
+  ) -> bool {
+    if XLEN == 32 {
+      case mem_access.access_mode {
+        rice_core_mem_access_mode::B ,
+        rice_core_mem_access_mode::BU: return true;
+        rice_core_mem_access_mode::H ,
+        rice_core_mem_access_mode::HU: return offset != (3 as OFFSET_WIDTH);
+        default                      : return offset == (0 as OFFSET_WIDTH);
+      }
+    } else {
+      return false;
+    }
+  }
+
+//--------------------------------------------------------------
+//  Request
+//--------------------------------------------------------------
+  always_comb {
+    bus_if.request_valid = get_request_valid(request_state, i_valid);
+    bus_if.write         = get_write(i_mem_access);
+    bus_if.address       = get_address(request_state, address);
+    bus_if.strobe        = get_strobe(request_state, offset, i_mem_access);
+    bus_if.write_data    = get_write_data(request_state, offset, i_rs2_value);
+  }
+
+  always_comb {
+    write_done =
+      bus_if.write_request_ack()
+      && (single_access || (request_state == rice_core_state::DO_2ND_ACCESS));
+  }
+
+  always_ff {
+    if_reset {
+      request_state = rice_core_state::IDLE;
+    } else {
+      case request_state {
+        rice_core_state::IDLE: {
+          if i_valid && (!bus_if.request_ready) {
+            request_state = rice_core_state::DO_1ST_ACCESS;
+          } else if bus_if.request_ack() && (!single_access) {
+            request_state = rice_core_state::DO_2ND_ACCESS;
+          } else if bus_if.read_request_ack() {
+            request_state = rice_core_state::WAIT_FOR_DONE;
+          }
+        }
+        rice_core_state::DO_1ST_ACCESS: {
+          if bus_if.request_ack() && (!single_access) {
+            request_state = rice_core_state::DO_2ND_ACCESS;
+          } else if bus_if.write_request_ack() {
+            request_state = rice_core_state::IDLE;
+          } else if bus_if.read_request_ack() {
+            request_state = rice_core_state::WAIT_FOR_DONE;
+          }
+        }
+        rice_core_state::DO_2ND_ACCESS: {
+          if bus_if.write_request_ack() {
+            request_state = rice_core_state::IDLE;
+          } else if bus_if.read_request_ack() {
+            request_state = rice_core_state::WAIT_FOR_DONE;
+          }
+        }
+        rice_core_state::WAIT_FOR_DONE: {
+          if read_done {
+            request_state = rice_core_state::IDLE;
+          }
+        }
+      }
+    }
+  }
+
+  function get_request_valid(
+    state: input rice_core_state,
+    valid: input logic          ,
+  ) -> logic {
+    return valid && (state == rice_core_state::IDLE)
+      || (inside state {rice_core_state::DO_1ST_ACCESS, rice_core_state::DO_2ND_ACCESS});
+  }
+
+  function get_write(
+    mem_access: input rice_core_mem_access,
+  ) -> logic {
+    return mem_access.access_type == rice_core_mem_access_type::STORE;
+  }
+
+  function get_address(
+    state: input rice_core_state,
+    base : input logic<XLEN>    ,
+  ) -> logic<XLEN> {
+    var address: logic<XLEN>;
+
+    address = {base[XLEN-1:OFFSET_WIDTH], (0 as OFFSET_WIDTH)};
+    if state == rice_core_state::DO_2ND_ACCESS {
+      address += BYTE_SIZE as XLEN;
+    }
+
+    return address;
+  }
+
+  function get_strobe(
+    state     : input rice_core_state     ,
+    offset    : input logic<OFFSET_WIDTH> ,
+    mem_access: input rice_core_mem_access,
+  ) -> logic<STROBE_WIDTH> {
+    var strobe_base: logic<1*STROBE_WIDTH>;
+    var strobe     : logic<2*STROBE_WIDTH>;
+
+    if mem_access.access_type != rice_core_mem_access_type::STORE {
+      strobe_base = 'h0 as STROBE_WIDTH;
+    } else if mem_access.access_mode == rice_core_mem_access_mode::B {
+      strobe_base = 'h1 as STROBE_WIDTH;
+    } else if mem_access.access_mode == rice_core_mem_access_mode::H {
+      strobe_base = 'h3 as STROBE_WIDTH;
+    } else {
+      strobe_base = 'hF as STROBE_WIDTH;
+    }
+
+    strobe                       = '0;
+    strobe[offset+:STROBE_WIDTH] = strobe_base;
+    if state == rice_core_state::DO_2ND_ACCESS {
+      return strobe[1 step STROBE_WIDTH];
+    } else {
+      return strobe[0 step STROBE_WIDTH];
+    }
+  }
+
+  function get_write_data(
+    state    : input rice_core_state    ,
+    offset   : input logic<OFFSET_WIDTH>,
+    rs2_value: input rice_core_value    ,
+  ) -> logic<XLEN> {
+    var data: logic<2 * XLEN>;
+
+    data                 = '0;
+    data[8*offset+:XLEN] = rs2_value;
+    if state == rice_core_state::DO_2ND_ACCESS {
+      return data[1 step XLEN];
+    } else {
+      return data[0 step XLEN];
+    }
+  }
+
+//--------------------------------------------------------------
+//  Response
+//--------------------------------------------------------------
+  always_comb {
+    bus_if.response_ready = response_state != rice_core_state::IDLE;
+  }
+
+  always_comb {
+    read_done =
+      bus_if.response_ack()
+      && (single_access || (response_state == rice_core_state::DO_2ND_ACCESS));
+  }
+
+  always_comb {
+    if response_state == rice_core_state::DO_2ND_ACCESS {
+      read_data[0 step XLEN] = read_data_1st;
+      read_data[1 step XLEN] = bus_if.read_data;
+    } else {
+      read_data[0 step XLEN] = bus_if.read_data;
+      read_data[1 step XLEN] = bus_if.read_data;
+    }
+  }
+
+  always_ff {
+    if bus_if.response_ack() {
+      read_data_1st = bus_if.read_data;
+    }
+  }
+
+  always_ff {
+    if_reset {
+      response_state = rice_core_state::IDLE;
+    } else {
+      case response_state {
+        rice_core_state::IDLE: {
+          if bus_if.read_request_ack() {
+            response_state = rice_core_state::DO_1ST_ACCESS;
+          }
+        }
+        rice_core_state::DO_1ST_ACCESS: {
+          if bus_if.response_ack() && single_access {
+            response_state = rice_core_state::IDLE;
+          } else if bus_if.response_ack() {
+            response_state = rice_core_state::DO_2ND_ACCESS;
+          }
+        }
+        rice_core_state::DO_2ND_ACCESS: {
+          if bus_if.response_ack() {
+            response_state = rice_core_state::IDLE;
+          }
+        }
+      }
+    }
+  }
+
+//--------------------------------------------------------------
+//  Result
+//--------------------------------------------------------------
+  always_comb {
+    o_done   = {read_done, write_done};
+    o_result = get_read_data(read_data, offset, i_mem_access);
+  }
+
+  function get_read_data(
+    read_data : input logic<2 * XLEN>     ,
+    offset    : input logic<OFFSET_WIDTH> ,
+    mem_access: input rice_core_mem_access,
+  ) -> logic<XLEN> {
+    var data: logic<XLEN>;
+
+    data = read_data[8*offset+:XLEN];
+    case mem_access.access_mode {
+      rice_core_mem_access_mode::B : return {data[7] repeat (XLEN - 8), data[0+:8]};
+      rice_core_mem_access_mode::BU: return data[0+:8] as XLEN;
+      rice_core_mem_access_mode::H : return {data[15] repeat (XLEN - 16), data[0+:16]};
+      rice_core_mem_access_mode::HU: return data[0+:16] as XLEN;
+      default                      : return data;
+    }
+  }
+}

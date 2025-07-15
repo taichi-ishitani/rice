@@ -13,6 +13,8 @@ DVEfiles
 simv*
 ucli.key
 vc_hdrs.h
+novas.*
+verdiLog
 
 # cosim
 **/sim_binary/cosim
@@ -22,3 +24,9 @@ whisper_connect
 *.bin
 *.dump
 *.elf
+
+# Veryl
+.build
+dependencies
+target
+**/sim_binary/*.list.rb

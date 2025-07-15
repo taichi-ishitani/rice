@@ -1,0 +1,119 @@
+pub package rice_riscv_pkg {
+  const RF_SIZE          : u32 = 32;
+  const CSR_SIZE         : u32 = 4096;
+  const CSR_ADDRESS_WIDTH: u32 = $clog2(CSR_SIZE);
+
+  enum rice_riscv_opcode: logic<7> {
+      LOAD      = 7'b00_000_11,
+      STORE     = 7'b01_000_11,
+      BRANCH    = 7'b11_000_11,
+      JALR      = 7'b11_001_11,
+      MISC_MEM  = 7'b00_011_11,
+      JAL       = 7'b11_011_11,
+      OP_IMM    = 7'b00_100_11,
+      OP        = 7'b01_100_11,
+      SYSTEM    = 7'b11_100_11,
+      AUIPC     = 7'b00_101_11,
+      LUI       = 7'b01_101_11,
+  }
+
+  enum rice_riscv_inst_type: logic<3> {
+    R,
+    I,
+    S,
+    B,
+    U,
+    J,
+  }
+
+  type rice_riscv_inst = logic<32>;
+  type rice_riscv_rs   = logic<5>;
+  type rice_riscv_rd   = logic<5>;
+
+  struct rice_riscv_inst_r {
+    funct7: logic<7>         ,
+    rs2   : rice_riscv_rs    ,
+    rs1   : rice_riscv_rs    ,
+    funct3: logic<3>         ,
+    rd    : rice_riscv_rd    ,
+    opcode: rice_riscv_opcode,
+  }
+
+  struct rice_riscv_inst_i {
+    imm_11  : logic            ,
+    imm_10_0: logic<11>        ,
+    rs1     : rice_riscv_rs    ,
+    funct3  : logic<3>         ,
+    rd      : rice_riscv_rd    ,
+    opcode  : rice_riscv_opcode,
+  }
+
+  struct rice_riscv_inst_s {
+    imm_11  : logic            ,
+    imm_10_5: logic<6>         ,
+    rs2     : rice_riscv_rs    ,
+    rs1     : rice_riscv_rs    ,
+    funct3  : logic<3>         ,
+    imm_4_0 : logic<5>         ,
+    opcode  : rice_riscv_opcode,
+  }
+
+  struct rice_riscv_inst_b {
+    imm_12  : logic            ,
+    imm_10_5: logic<6>         ,
+    rs2     : rice_riscv_rs    ,
+    rs1     : rice_riscv_rs    ,
+    funct3  : logic<3>         ,
+    imm_4_1 : logic<4>         ,
+    imm_11  : logic            ,
+    opcode  : rice_riscv_opcode,
+  }
+
+  struct rice_riscv_inst_u {
+    imm_31   : logic            ,
+    imm_30_12: logic<19>        ,
+    rd       : rice_riscv_rd    ,
+    opcode   : rice_riscv_opcode,
+  }
+
+  struct rice_riscv_inst_j {
+    imm_20   : logic            ,
+    imm_10_1 : logic<10>        ,
+    imm_11   : logic            ,
+    imm_19_12: logic<8>         ,
+    rd       : rice_riscv_rd    ,
+    opcode   : rice_riscv_opcode,
+  }
+
+  function get_opcode(inst_bits: input rice_riscv_inst) -> rice_riscv_opcode {
+    return inst_bits[0+:$bits(rice_riscv_opcode)] as rice_riscv_opcode;
+  }
+
+  function get_inst_type(opcode: input rice_riscv_opcode) -> rice_riscv_inst_type {
+    case opcode {
+      rice_riscv_opcode::OP_IMM,
+      rice_riscv_opcode::JALR,
+      rice_riscv_opcode::LOAD,
+      rice_riscv_opcode::MISC_MEM,
+      rice_riscv_opcode::SYSTEM:
+        return rice_riscv_inst_type::I;
+      rice_riscv_opcode::LUI,
+      rice_riscv_opcode::AUIPC:
+        return rice_riscv_inst_type::U;
+      rice_riscv_opcode::JAL:
+        return rice_riscv_inst_type::J;
+      rice_riscv_opcode::BRANCH:
+        return rice_riscv_inst_type::B;
+      rice_riscv_opcode::STORE:
+        return rice_riscv_inst_type::S;
+      default:
+        return rice_riscv_inst_type::R;
+    }
+  }
+
+  enum rice_riscv_privilege_level {
+    U = 2'b00,
+    S = 2'b01,
+    M = 2'b11,
+  }
+}

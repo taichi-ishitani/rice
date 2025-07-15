@@ -1,18 +1,12 @@
 [submodule "test/riscv/riscv-tests"]
 	path = test/riscv/riscv-tests
 	url = https://github.com/riscv-software-src/riscv-tests.git
-[submodule "rtl/common/pzbcm"]
-	path = rtl/common/pzbcm
-	url = https://github.com/pezy-computing/pzbcm.git
 [submodule "tb/common/tue"]
 	path = tb/common/tue
 	url = https://github.com/taichi-ishitani/tue.git
 [submodule "tb/common/tvip-common"]
 	path = tb/common/tvip-common
 	url = https://github.com/taichi-ishitani/tvip-common.git
-[submodule "rtl/csr/rggen-sv-rtl"]
-	path = rtl/csr/rggen-sv-rtl
-	url = https://github.com/rggen/rggen-sv-rtl.git
 [submodule "tb/cosim/cosim-arch-checker"]
 	path = tb/cosim/cosim-arch-checker
 	url = https://github.com/tenstorrent/cosim-arch-checker.git

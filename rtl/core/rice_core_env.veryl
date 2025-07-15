@@ -1,0 +1,194 @@
+module rice_core_env::<PKG: rice_core_proto_pkg> (
+  i_clk   : input   clock                       ,
+  i_rst   : input   reset                       ,
+  i_enable: input   logic                       ,
+  env_if  : modport rice_core_env_if::<PKG>::env,
+  csr_if  : modport rice_bus_if::slave          ,
+) {
+  import PKG::*;
+  import rice_riscv_pkg::rice_riscv_privilege_level;
+  import rice_riscv_pkg::CSR_ADDRESS_WIDTH;
+
+  const MTVEC_LSB        : u32 = 2;
+  const MTVEC_WIDTH      : u32 = XLEN - MTVEC_LSB;
+  const MCAUSE_CODE_WIDTH: u32 = XLEN - 1;
+
+  var privilege_level  : rice_riscv_privilege_level;
+  var do_trap          : logic                     ;
+  var do_return        : logic                     ;
+  var cycle_en         : logic                     ;
+  var instret_en       : logic                     ;
+  var mie_set          : logic                     ;
+  var mie              : logic<2>                  ;
+  var mpie_set         : logic                     ;
+  var mpie             : logic<2>                  ;
+  var mtvec_base       : logic<MTVEC_WIDTH>        ;
+  var mcounteren_cy    : logic                     ;
+  var mcounteren_ir    : logic                     ;
+  var mpp_set          : logic                     ;
+  var mpp              : logic<2, 2>               ;
+  var mepc_set         : logic                     ;
+  var mepc             : rice_core_pc<2>           ;
+  var mcause_set       : logic                     ;
+  var mcause_interrutpt: logic                     ;
+  var mcause_code      : logic<MCAUSE_CODE_WIDTH>  ;
+  var mcycle_up        : logic<2>                  ;
+  var mcycle           : logic<2 * XLEN>           ;
+  var minstret_up      : logic<2>                  ;
+  var minstret         : logic<2 * XLEN>           ;
+
+//--------------------------------------------------------------
+//  Privilege level
+//--------------------------------------------------------------
+  always_comb {
+    env_if.privilege_level = privilege_level;
+  }
+
+  always_ff {
+    if_reset {
+      privilege_level = rice_riscv_privilege_level::M;
+    } else if !i_enable {
+      privilege_level = rice_riscv_privilege_level::M;
+    } else if do_trap {
+      privilege_level = rice_riscv_privilege_level::M;
+    } else if do_return {
+      privilege_level = mpp[0] as rice_riscv_privilege_level;
+    }
+  }
+
+//--------------------------------------------------------------
+//  Trap control
+//--------------------------------------------------------------
+  always_comb {
+    env_if.trap_pc   = {mtvec_base, (0 as MTVEC_LSB)};
+    env_if.return_pc = mepc[0];
+  }
+
+  always_comb {
+    do_trap   = env_if.exception_any;
+    do_return = env_if.mret;
+  }
+
+  always_comb {
+    mie_set  = do_trap || do_return;
+    mpie_set = mie_set;
+    mpp_set  = mie_set;
+    if do_return {
+      mie[1]  = mpie[0];
+      mpie[1] = '1;
+      mpp[1]  = rice_riscv_privilege_level::M;
+    } else {
+      mie[1]  = '0;
+      mpie[1] = mie[0];
+      mpp[1]  = privilege_level;
+    }
+  }
+
+  always_comb {
+    mepc_set          = do_trap;
+    mepc[1]           = env_if.pc;
+    mcause_set        = do_trap;
+    mcause_interrutpt = '0;
+    mcause_code       = get_mcause_code(env_if.exception);
+  }
+
+  function get_mcause_code(
+    exception: input rice_core_exception,
+  ) -> logic<MCAUSE_CODE_WIDTH> {
+    var code: logic<MCAUSE_CODE_WIDTH>;
+
+    code = 0 as MCAUSE_CODE_WIDTH;
+    for i: u32 in 0..$bits(rice_core_exception) {
+      if exception[i] {
+        code = i as MCAUSE_CODE_WIDTH;
+        break;
+      }
+    }
+
+    return code;
+  }
+
+//--------------------------------------------------------------
+//  Machine counter
+//--------------------------------------------------------------
+  always_comb {
+    if privilege_level == rice_riscv_privilege_level::M {
+      cycle_en   = '1;
+      instret_en = '1;
+    } else {
+      cycle_en   = mcounteren_cy;
+      instret_en = mcounteren_ir;
+    }
+  }
+
+  always_comb {
+    mcycle_up[0] = i_enable;
+    mcycle_up[1] = mcycle_up[0] && (mcycle[0 step XLEN] == '1);
+  }
+
+  always_comb {
+    minstret_up[0] = i_enable && env_if.inst_retired;
+    minstret_up[1] = minstret_up[0] && (minstret[0 step XLEN] == '1);
+  }
+
+//--------------------------------------------------------------
+//  CSR
+//--------------------------------------------------------------
+  inst u_csr: rice_csr_xlen32 #(
+    ERROR_STATUS: true,
+  ) (
+    i_clk                        : i_clk                ,
+    i_rst                        : i_rst                ,
+    i_privilege_level            : privilege_level      ,
+    csr_if                       : csr_if               ,
+    i_mhartid                    : '0                   ,
+    i_mstatus_mie_valid          : mie_set              ,
+    i_mstatus_mie                : mie[1]               ,
+    o_mstatus_mie                : mie[0]               ,
+    i_mstatus_mpie_valid         : mpie_set             ,
+    i_mstatus_mpie               : mpie[1]              ,
+    o_mstatus_mpie               : mpie[0]              ,
+    i_mstatus_mpp_valid          : mpp_set              ,
+    i_mstatus_mpp                : mpp[1]               ,
+    o_mstatus_mpp                : mpp[0]               ,
+    o_mtvec_mode                 : _                    ,
+    o_mtvec_base                 : mtvec_base           ,
+    o_mcounteren_cy              : mcounteren_cy        ,
+    o_mcounteren_ir              : mcounteren_ir        ,
+    o_mscratch                   : _                    ,
+    i_mepc_valid                 : mepc_set             ,
+    i_mepc                       : mepc[1]              ,
+    o_mepc                       : mepc[0]              ,
+    i_mcause_exception_code_valid: mcause_set           ,
+    i_mcause_exception_code      : mcause_code          ,
+    o_mcause_exception_code      : _                    ,
+    i_mcause_interrupt_valid     : mcause_set           ,
+    i_mcause_interrupt           : mcause_interrutpt    ,
+    o_mcause_interrupt           : _                    ,
+    i_mtval_valid                : '0                   ,
+    i_mtval                      : '0                   ,
+    o_mtval                      : _                    ,
+    i_mcycle_up                  : mcycle_up[0]         ,
+    o_mcycle_count               : mcycle[0 step XLEN]  ,
+    i_minstret_up                : minstret_up[0]       ,
+    o_minstret_count             : minstret[0 step XLEN],
+    i_mcycleh_up                 : mcycle_up[1]         ,
+    o_mcycleh_count              : mcycle[1 step XLEN]  ,
+    i_minstreth_up               : minstret_up[1]       ,
+    o_minstreth_count            : minstret[1 step XLEN],
+    o_mcountinhibit_cy           : _                    ,
+    o_mcountinhibit_ir           : _                    ,
+    i_cycle_write_enable         : '0                   ,
+    i_cycle_read_enable          : cycle_en             ,
+    i_cycle                      : mcycle[0 step XLEN]  ,
+    i_instret_write_enable       : '0                   ,
+    i_instret_read_enable        : instret_en           ,
+    i_instret                    : minstret[0 step XLEN],
+    i_cycleh_write_enable        : '0                   ,
+    i_cycleh_read_enable         : cycle_en             ,
+    i_cycleh                     : mcycle[1 step XLEN]  ,
+    i_instreth_write_enable      : '0                   ,
+    i_instreth_read_enable       : instret_en           ,
+    i_instreth                   : minstret[1 step XLEN],
+  );
+}

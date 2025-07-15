@@ -1,0 +1,119 @@
+module rggen_rice_bus_if_adapter #(
+  param ADDRESS_WIDTH:        u32                 = 8,
+  param LOCAL_ADDRESS_WIDTH:  u32                 = 8,
+  param BUS_WIDTH:            u32                 = 32,
+  param REGISTERS:            u32                 = 1,
+  param PRE_DECODE:           bool                = false,
+  param BASE_ADDRESS:         bit<ADDRESS_WIDTH>  = '0,
+  param BYTE_SIZE:            u32                 = 256,
+  param ERROR_STATUS:         bool                = false,
+  param DEFAULT_READ_DATA:    bit<BUS_WIDTH>      = '0,
+  param INSERT_SLICER:        bool                = false
+)(
+  i_clk            : input   clock                                    ,
+  i_rst            : input   reset                                    ,
+  i_privilege_level: input   logic<2>                                 ,
+  csr_if           : modport rice_bus_if::slave                       ,
+  register_if      : modport rggen::rggen_register_if::host[REGISTERS],
+){
+  import rggen::rggen_rtl_pkg::*;
+  import rice_riscv_pkg::rice_riscv_privilege_level;
+
+  const ADDRESS_LSB: u32 = $clog2(BUS_WIDTH / 8);
+
+  var match_range   : bool            ;
+  var response_valid: logic           ;
+  var read_data     : logic<BUS_WIDTH>;
+  var error         : logic           ;
+
+  inst bus_if: rggen::rggen_bus_if #(ADDRESS_WIDTH, BUS_WIDTH, STROBE_WIDTH: BUS_WIDTH);
+
+  //  Request
+  always_comb {
+    case csr_if.address {
+      12'h000..=12'h0FF,  //  User level standard rw
+      12'h400..=12'h4FF:  //  User level standard rw
+        match_range = true;
+      12'hC00..=12'hCBF:  //  User level standard read only
+        match_range = !csr_if.write;
+      12'h300..=12'h3FF,  //  Machine lavel standard rw
+      12'h700..=12'h79F,  //  Machine lavel standard rw
+      12'h7A0..=12'h7AF,  //  Machine lavel standard rw debug
+      12'hB00..=12'hBBF:  //  Machine lavel standard rw
+        match_range =
+          i_privilege_level == rice_riscv_privilege_level::M;
+      12'hF00..=12'hFBF:  //  Machine lavel standard read only
+        match_range =
+          i_privilege_level == rice_riscv_privilege_level::M
+            && (!csr_if.write);
+      default:
+        match_range = false;
+    }
+  }
+
+  always_comb {
+    csr_if.request_ready = (!response_valid) && (bus_if.ready || (!match_range));
+    bus_if.valid         = (!response_valid) && csr_if.request_valid && match_range;
+    bus_if.access        = if csr_if.write ? rggen_access::WRITE : rggen_access::READ;
+    bus_if.address       = {csr_if.address, 0 as ADDRESS_LSB};
+    bus_if.write_data    = csr_if.write_data;
+    bus_if.strobe        = csr_if.strobe;
+  }
+
+  //  Response
+  always_comb {
+    csr_if.response_valid = response_valid;
+    csr_if.read_data      = read_data;
+    csr_if.error          = error;
+  }
+
+  always_ff {
+    if_reset {
+      response_valid = 0;
+    } else if csr_if.response_ack() {
+      response_valid = 0;
+    } else if csr_if.request_valid && (!match_range) {
+      response_valid = 1;
+    } else if bus_if.ack() {
+      response_valid = 1;
+    }
+  }
+
+  always_ff {
+    if csr_if.request_valid && (!match_range) {
+      read_data = '0;
+    } else if bus_if.ack() {
+      read_data = bus_if.read_data;
+    }
+  }
+
+  always_ff {
+    if_reset {
+      error = 0;
+    } else if csr_if.request_valid && (!match_range) {
+      error = 1;
+    } else if bus_if.ack() {
+      error = bus_if.status[1];
+    }
+  }
+
+  //  Adapter
+  inst u_adapter_common: rggen::rggen_adapter_common #(
+    ADDRESS_WIDTH      : ADDRESS_WIDTH      ,
+    LOCAL_ADDRESS_WIDTH: LOCAL_ADDRESS_WIDTH,
+    BUS_WIDTH          : BUS_WIDTH          ,
+    STROBE_WIDTH       : BUS_WIDTH          ,
+    REGISTERS          : REGISTERS          ,
+    PRE_DECODE         : PRE_DECODE         ,
+    BASE_ADDRESS       : BASE_ADDRESS       ,
+    BYTE_SIZE          : BYTE_SIZE          ,
+    ERROR_STATUS       : ERROR_STATUS       ,
+    DEFAULT_READ_DATA  : DEFAULT_READ_DATA  ,
+    INSERT_SLICER      : INSERT_SLICER      ,
+  )(
+    i_clk      : i_clk      ,
+    i_rst      : i_rst      ,
+    bus_if     : bus_if     ,
+    register_if: register_if,
+  );
+}

@@ -1,0 +1,74 @@
+pub module tb_rice_core_env_inst_checker::<PKG: rice_core_proto_pkg> (
+  i_clk      : input   clock                                ,
+  i_rst      : input   reset                                ,
+  pipeline_if: modport rice_core_pipeline_if::<PKG>::monitor,
+) {
+  import PKG::*;
+
+  var id_result          : rice_core_id_result;
+  var is_valid_alu_op    : bool               ;
+  var is_valid_mul_op    : bool               ;
+  var is_valid_div_op    : bool               ;
+  var is_valid_branch_op : bool               ;
+  var is_valid_mem_access: bool               ;
+  var is_valid_csr_access: bool               ;
+  var is_valid_trap      : bool               ;
+  var is_valid_ordering  : bool               ;
+
+  always_comb {
+    id_result           = pipeline_if.id_result;
+    is_valid_alu_op     = id_result.alu_op.command != rice_core_alu_command::NONE;
+    is_valid_mul_op     = id_result.mul_op != 0;
+    is_valid_div_op     = id_result.div_op != 0;
+    is_valid_branch_op  = id_result.branch_op != '0;
+    is_valid_mem_access = id_result.mem_access.access_type != rice_core_mem_access_type::NONE;
+    is_valid_csr_access = id_result.csr_access != rice_core_csr_access::NONE;
+    is_valid_trap       = id_result.trap != '0;
+    is_valid_ordering   = id_result.ordering.fence || id_result.ordering.fence_i;
+  }
+
+  let rst_n: reset_async_low = i_rst as reset_async_low;
+
+  embed(inline) sv{{{
+    import uvm_pkg::*;
+    `include "uvm_macros.svh"
+
+    ast_valid_inst:
+    assert
+      property (
+        @(posedge i_clk) disable iff (!rst_n)
+        id_result.valid |-> (
+          is_valid_alu_op || is_valid_mul_op || is_valid_div_op || is_valid_branch_op ||
+          is_valid_mem_access || is_valid_csr_access || is_valid_trap || is_valid_ordering
+        )
+      )
+    else
+      `uvm_fatal(
+        "INVALID_INST",
+        $sformatf(
+          "invalid instruction is given: pc %h inst %h",
+          $past(pipeline_if.if_result.pc),
+          $past(pipeline_if.if_result.inst_bits)
+        )
+      )
+
+    function automatic bit is_checker_disabled();
+      uvm_cmdline_processor clp;
+      string                args[$];
+
+      clp = uvm_cmdline_processor::get_inst();
+      if (clp.get_arg_matches("+disable_inst_check", args)) begin
+        return 1;
+      end
+      else begin
+        return 0;
+      end
+    endfunction
+
+    initial begin
+      if (is_checker_disabled()) begin
+        $assertoff(0, ast_valid_inst);
+      end
+    end
+  }}}
+}

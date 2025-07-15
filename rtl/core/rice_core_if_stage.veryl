@@ -1,0 +1,197 @@
+module rice_core_if_stage::<PKG: rice_core_proto_pkg> #(
+  param FIFO_DEPTH: u32          = 4                            ,
+  param INITIAL_PC: rice_core_pc = 32'h8000_0000 as rice_core_pc,
+)(
+  i_clk      : input clock                                   ,
+  i_rst      : input reset                                   ,
+  i_enable   : input logic                                   ,
+  pipeline_if: modport rice_core_pipeline_if::<PKG>::if_stage,
+  inst_bus_if: modport rice_bus_if::master                   ,
+) {
+  import rice_riscv_pkg::*;
+  import PKG::*;
+
+  struct rice_core_inst_info {
+    pc       : rice_core_pc,
+    bp_result: rice_core_bp_result,
+  }
+
+  const FLUSH_COUNT_WIDTH: u32 = $clog2(FIFO_DEPTH + 1);
+
+  var bp_result  : rice_core_bp_result     ;
+  var pc         : rice_core_pc<2>         ;
+  var req_ack    : logic                   ;
+  var resp_ack   : logic                   ;
+  var fifo_empty : logic<2>                ;
+  var fifo_full  : logic                   ;
+  var fifo_push  : logic<2>                ;
+  var fifo_pop   : logic                   ;
+  var inst_info  : rice_core_inst_info<2>  ;
+  var inst_bits  : rice_riscv_inst         ;
+  var flush      : logic                   ;
+  var flush_busy : logic                   ;
+  var flush_count: logic<FLUSH_COUNT_WIDTH>;
+  var req_count  : logic<FLUSH_COUNT_WIDTH>;
+
+  inst bus_if: rice_bus_if #(ADDRESS_WIDTH: XLEN, DATA_WIDTH: XLEN);
+
+  inst u_slicer: rice_bus_slicer #(
+    ADDRESS_WIDTH  : XLEN,
+    DATA_WIDTH     : XLEN,
+    REQUEST_STAGES : 1   ,
+    RESPONSE_STAGES: 0   ,
+  ) (
+    i_clk    : i_clk      ,
+    i_rst    : i_rst      ,
+    slave_if : bus_if     ,
+    master_if: inst_bus_if,
+  );
+
+//--------------------------------------------------------------
+//  Branch prediction
+//--------------------------------------------------------------
+  inst u_bp: rice_core_bp::<PKG> (
+    i_clk          : i_clk                    ,
+    i_rst          : i_rst                    ,
+    i_enable       : i_enable                 ,
+    i_branch_result: pipeline_if.branch_result,
+    i_pc           : pc[0]                    ,
+    o_bp_result    : bp_result                ,
+  );
+
+//--------------------------------------------------------------
+//  Request
+//--------------------------------------------------------------
+  always_comb {
+    bus_if.request_valid = i_enable && ((!fifo_full) || (!pipeline_if.stall));
+    bus_if.write         = '0;
+    bus_if.address       = pc[0];
+    bus_if.strobe        = '0;
+    bus_if.write_data    = '0;
+  }
+
+  always_comb {
+    req_ack = bus_if.request_ack();
+  }
+
+  always_comb {
+    if pipeline_if.flush {
+      pc[0] = pipeline_if.flush_pc;
+    } else {
+      pc[0] = pc[1];
+    }
+  }
+
+  always_ff {
+    if_reset {
+      pc[1] = INITIAL_PC;
+    } else if !i_enable {
+      pc[1] = INITIAL_PC;
+    } else if req_ack {
+      if bp_result.taken {
+        pc[1] = bp_result.target_pc;
+      } else {
+        pc[1] = pc[0] + 4 as rice_core_pc;
+      }
+    } else if pipeline_if.flush {
+      pc[1] = pipeline_if.flush_pc;
+    }
+  }
+
+//--------------------------------------------------------------
+//  Response
+//--------------------------------------------------------------
+  always_comb {
+    bus_if.response_ready = '1;
+  }
+
+  always_comb {
+    resp_ack = bus_if.response_ack();
+  }
+
+  always_comb {
+    pipeline_if.if_result.valid     = !(fifo_empty[0] || fifo_empty[1]);
+    pipeline_if.if_result.pc        = inst_info[1].pc;
+    pipeline_if.if_result.inst_bits = inst_bits;
+    pipeline_if.if_result.bp_result = inst_info[1].bp_result;
+  }
+
+  always_comb {
+    fifo_push[0] = req_ack;
+    fifo_push[1] = resp_ack;
+    fifo_pop     = pipeline_if.if_result.valid && (!pipeline_if.stall);
+  }
+
+  always_comb {
+    inst_info[0].pc        = pc[0];
+    inst_info[0].bp_result = bp_result;
+  }
+
+  inst u_info_fifo: $std::fifo #(
+    TYPE         : rice_core_inst_info,
+    DEPTH        : FIFO_DEPTH         ,
+    THRESHOLD    : FIFO_DEPTH - 1     ,
+    PUSH_ON_CLEAR: true               ,
+  ) (
+    i_clk        : i_clk            ,
+    i_rst        : i_rst            ,
+    i_clear      : pipeline_if.flush,
+    o_empty      : fifo_empty[0]    ,
+    o_almost_full: fifo_full        ,
+    o_full       : _                ,
+    o_word_count : _                ,
+    i_push       : fifo_push[0]     ,
+    i_data       : inst_info[0]     ,
+    i_pop        : fifo_pop         ,
+    o_data       : inst_info[1]     ,
+  );
+
+  inst u_inst_fifo: $std::fifo #(
+    TYPE         : rice_riscv_inst,
+    DEPTH        : FIFO_DEPTH     ,
+  ) (
+    i_clk        : i_clk           ,
+    i_rst        : i_rst           ,
+    i_clear      : flush           ,
+    o_empty      : fifo_empty[1]   ,
+    o_almost_full: _               ,
+    o_full       : _               ,
+    o_word_count : _               ,
+    i_push       : fifo_push[1]    ,
+    i_data       : bus_if.read_data,
+    i_pop        : fifo_pop        ,
+    o_data       : inst_bits       ,
+  );
+
+//--------------------------------------------------------------
+//  Flush control
+//--------------------------------------------------------------
+  always_comb {
+    flush_busy = flush_count >: 0 as FLUSH_COUNT_WIDTH;
+    flush      = pipeline_if.flush || flush_busy;
+  }
+
+  always_ff {
+    if_reset {
+      flush_count = 0 as FLUSH_COUNT_WIDTH;
+    } else if pipeline_if.flush {
+      if resp_ack {
+        flush_count = req_count - 1 as FLUSH_COUNT_WIDTH;
+      } else {
+        flush_count = req_count;
+      }
+    } else if flush_busy && resp_ack {
+      flush_count = flush_count - 1 as FLUSH_COUNT_WIDTH;
+    }
+  }
+
+  always_ff {
+    if_reset {
+      req_count = 0 as FLUSH_COUNT_WIDTH;
+    } else if req_ack && (!resp_ack) {
+      req_count = req_count + 1 as FLUSH_COUNT_WIDTH;
+    } else if (!req_ack) && resp_ack {
+      req_count = req_count - 1 as FLUSH_COUNT_WIDTH;
+    }
+  }
+}

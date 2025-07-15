@@ -1,0 +1,15 @@
+[project]
+name       = "sim_rice"
+version    = "0.1.0"
+repository = "https://github.com/taichi-ishitani/rice"
+
+[format]
+indent_width  = 2
+
+[build]
+target           = {type = "directory", path = "target"}
+filelist_type    = "flgen"
+reset_low_suffix = "_n"
+
+[dependencies]
+rice = { path = "../../../"  }

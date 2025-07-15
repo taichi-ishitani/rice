@@ -1,0 +1,52 @@
+module rice_core::<PKG: rice_core_proto_pkg> (
+  i_clk      : input   clock              ,
+  i_rst      : input   reset              ,
+  i_enable   : input   logic              ,
+  inst_bus_if: modport rice_bus_if::master,
+  data_bus_if: modport rice_bus_if::master,
+) {
+  import PKG::*;
+  import rice_riscv_pkg::CSR_ADDRESS_WIDTH;
+
+  inst inst_if    : rice_bus_if #(ADDRESS_WIDTH: XLEN, DATA_WIDTH: XLEN);
+  inst data_if    : rice_bus_if #(ADDRESS_WIDTH: XLEN, DATA_WIDTH: XLEN);
+  inst csr_if     : rice_bus_if #(ADDRESS_WIDTH: CSR_ADDRESS_WIDTH, DATA_WIDTH: XLEN, STROBE_WIDTH: XLEN);
+  inst pipeline_if: rice_core_pipeline_if::<PKG>;
+  inst env_if     : rice_core_env_if::<PKG>;
+
+  connect inst_bus_if <> inst_if.slave;
+  connect data_bus_if <> data_if.slave;
+
+  inst u_if_stage: rice_core_if_stage::<PKG> (
+    i_clk      : i_clk      ,
+    i_rst      : i_rst      ,
+    i_enable   : i_enable   ,
+    pipeline_if: pipeline_if,
+    inst_bus_if: inst_if    ,
+  );
+
+  inst u_id_stage: rice_core_id_stage::<PKG> (
+    i_clk      : i_clk      ,
+    i_rst      : i_rst      ,
+    i_enable   : i_enable   ,
+    pipeline_if: pipeline_if,
+  );
+
+  inst u_ex_stage: rice_core_ex_stage::<PKG> (
+    i_clk      : i_clk      ,
+    i_rst      : i_rst      ,
+    i_enable   : i_enable   ,
+    pipeline_if: pipeline_if,
+    env_if     : env_if     ,
+    mem_if     : data_if    ,
+    csr_if     : csr_if     ,
+  );
+
+  inst u_env: rice_core_env::<PKG> (
+    i_clk   : i_clk   ,
+    i_rst   : i_rst   ,
+    i_enable: i_enable,
+    env_if  : env_if  ,
+    csr_if  : csr_if  ,
+  );
+}

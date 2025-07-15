@@ -10,8 +10,8 @@ module tb;
   tvip_clock_if clock_if();
   tvip_reset_if reset_if(clock_if.clk);
 
-  rice_bus_if inst_bus_if();
-  rice_bus_if data_bus_if();
+  `TB_RICE_CORE_ENV_BUS_IF inst_bus_if();
+  `TB_RICE_CORE_ENV_BUS_IF data_bus_if();
 
   tb_rice_bus_slave_bfm u_inst_bus_bfm (
     .i_clk    (clock_if.clk     ),
@@ -25,7 +25,7 @@ module tb;
     .bus_if   (data_bus_if      )
   );
 
-  rice_core duv (
+  `TB_RICE_CORE_ENV_DUT dut (
     .i_clk        (clock_if.clk     ),
     .i_rst_n      (reset_if.reset_n ),
     .i_enable     ('1               ),
@@ -33,30 +33,34 @@ module tb;
     .data_bus_if  (data_bus_if      )
   );
 
-  bind  duv
-  tb_rice_core_env_inst_checker u_inst_checker (
+  bind  dut
+  `TB_RICE_CORE_ENV_INST_CHECKER u_inst_checker (
     .i_clk        (i_clk        ),
     .i_rst_n      (i_rst_n      ),
     .pipeline_if  (pipeline_if  )
   );
 
-  bind  duv
-  tb_rice_core_env_pipeline_monitor_if_wrapper u_pipeline_monitor (
+  bind  dut
+  `TB_RICE_CORE_ENV_PIPELINE_IF_WRAPPER u_pipeline_if_monitor (
     .i_clk        (i_clk        ),
     .i_rst_n      (i_rst_n      ),
     .inst_bus_if  (inst_if      ),
     .pipeline_if  (pipeline_if  )
   );
 
-  function automatic tb_rice_core_env_context create_tb_context();
-    tb_rice_core_env_context  tb_context;
+  typedef virtual `TB_RICE_CORE_ENV_PIPELINE_IF tb_rice_core_env_pipeline_vif;
 
-    tb_context                      = new("tb_context");
-    tb_context.clock_vif            = clock_if;
-    tb_context.reset_vif            = reset_if;
-    tb_context.inst_bus_vif         = u_inst_bus_bfm.bfm_if;
-    tb_context.data_bus_vif         = u_data_bus_bfm.bfm_if;
-    tb_context.pipeline_monitor_vif = duv.u_pipeline_monitor.monitor_if;
+  function automatic tb_rice_core_env_context create_tb_context();
+    tb_rice_core_env_pipeline_if_proxy #(tb_rice_core_env_pipeline_vif) pipeline_if;
+    tb_rice_core_env_context                                            tb_context;
+
+    pipeline_if             = new(dut.u_pipeline_if_monitor.monitor_if);
+    tb_context              = new("tb_context");
+    tb_context.clock_vif    = clock_if;
+    tb_context.reset_vif    = reset_if;
+    tb_context.inst_bus_vif = u_inst_bus_bfm.bfm_if;
+    tb_context.data_bus_vif = u_data_bus_bfm.bfm_if;
+    tb_context.pipeline_if  = pipeline_if;
 
     return tb_context;
   endfunction

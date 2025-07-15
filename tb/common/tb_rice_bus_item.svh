@@ -3,6 +3,7 @@ class tb_rice_bus_item extends tue_sequence_item #(
   .STATUS         (tb_rice_bus_status         )
 );
   rand  tb_rice_bus_address address;
+  rand  bit                 write;
   rand  tb_rice_bus_strobe  strobe;
   rand  tb_rice_bus_data    data;
   rand  bit                 error;
@@ -28,11 +29,11 @@ class tb_rice_bus_item extends tue_sequence_item #(
   endfunction
 
   function bit is_write();
-    return strobe != 0;
+    return write == 1;
   endfunction
 
   function bit is_read();
-    return strobe == 0;
+    return write == 0;
   endfunction
 
   `define tb_rice_declare_begin_end_event_api(EVENT_TYPE) \
@@ -58,6 +59,7 @@ class tb_rice_bus_item extends tue_sequence_item #(
 
   `uvm_object_utils_begin(tb_rice_bus_item)
     `uvm_field_int(address, UVM_DEFAULT | UVM_HEX)
+    `uvm_field_int(write, UVM_DEFAULT | UVM_BIN)
     `uvm_field_int(strobe, UVM_DEFAULT | UVM_HEX)
     `uvm_field_int(data, UVM_DEFAULT | UVM_HEX)
     `uvm_field_int(error, UVM_DEFAULT | UVM_BIN)
