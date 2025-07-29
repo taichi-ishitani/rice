@@ -69,9 +69,9 @@ module rice_core_div::<PKG: rice_core_proto_pkg> (
       initial_values[XLEN-(i+1)].result[i+:XLEN]     = rs1_value;
     }
 
-    for i: u32 in 1..XLEN {
-      if !match_sign[XLEN-i] {
-        return initial_values[XLEN-i];
+    for i: i32 in rev 0..XLEN {
+      if !match_sign[i] {
+        return initial_values[i];
       }
     }
 
