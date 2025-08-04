@@ -1,4 +1,4 @@
-import rggen::rggen_rtl_pkg::*;
+#[fmt(skip)]
 pub module rice_csr_xlen32 #(
   param ADDRESS_WIDTH: u32 = 14,
   param PRE_DECODE: bool = false,
@@ -63,6 +63,7 @@ pub module rice_csr_xlen32 #(
   i_instreth_read_enable: input logic,
   i_instreth: input logic<32>
 ){
+  import rggen::rggen_rtl_pkg::*;
   inst register_if: rggen::rggen_register_if[24]#(ADDRESS_WIDTH: 14, BUS_WIDTH: 32, VALUE_WIDTH: 32);
   inst u_adapter: rggen_rice_bus_if_adapter #(
     ADDRESS_WIDTH      : ADDRESS_WIDTH,
