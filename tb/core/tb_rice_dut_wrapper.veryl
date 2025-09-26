@@ -1,0 +1,55 @@
+module tb_rice_dut_wrapper::<XLEN: u32> (
+  i_clk  : input '_ clock_posedge  ,
+  i_rst_n: input '_ reset_async_low,
+) {
+  alias package dut_pkg = rice_core_pkg::<XLEN>;
+
+  let clk: '_ clock = i_clk as clock;
+  let rst: '_ reset = i_rst_n as reset;
+
+  inst inst_bus_if: '_ rice_bus_if #(ADDRESS_WIDTH: XLEN, DATA_WIDTH: XLEN);
+  inst data_bus_if: '_ rice_bus_if #(ADDRESS_WIDTH: XLEN, DATA_WIDTH: XLEN);
+
+  inst u_inst_bus_bfm: $sv::tb_rice_bus_slave_bfm (
+    i_clk  : i_clk      ,
+    i_rst_n: i_rst_n    ,
+    bus_if : inst_bus_if,
+  );
+
+  inst u_data_bus_bfm: $sv::tb_rice_bus_slave_bfm (
+    i_clk  : i_clk      ,
+    i_rst_n: i_rst_n    ,
+    bus_if : data_bus_if,
+  );
+
+  inst dut: rice_core::<dut_pkg> (
+    i_clk      : clk        ,
+    i_rst      : rst        ,
+    i_enable   : true       ,
+    inst_bus_if: inst_bus_if,
+    data_bus_if: data_bus_if,
+  );
+
+  bind rice_core::<dut_pkg> <- u_inst_checker: tb_rice_core_env_inst_checker::<dut_pkg> (
+    i_clk      : i_clk      ,
+    i_rst      : i_rst      ,
+    pipeline_if: pipeline_if,
+  );
+
+  bind rice_core::<dut_pkg> <- u_pipeline_if_monitor: tb_rice_core_env_pipeline_if_wrapper::<dut_pkg> (
+    i_clk      : i_clk      ,
+    i_rst      : i_rst      ,
+    inst_bus_if: inst_if    ,
+    pipeline_if: pipeline_if,
+  );
+
+  embed (inline) sv{{{
+    typedef virtual \{ tb_rice_core_env_pipeline_if::<dut_pkg> \} tb_rice_core_env_pipeline_vif;
+
+    function automatic tb_rice_core_env_pkg::tb_rice_core_env_pipeline_if_proxy_base get_pipeline_if_proxy();
+      tb_rice_core_env_pkg::tb_rice_core_env_pipeline_if_proxy #(tb_rice_core_env_pipeline_vif) proxy;
+      proxy = new(dut.u_pipeline_if_monitor.monitor_if);
+      return proxy;
+    endfunction
+  }}}
+}
